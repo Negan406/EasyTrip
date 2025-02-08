@@ -21,7 +21,6 @@ function App() {
     const authStatus = localStorage.getItem("isAuthenticated") === "true";
     setIsAuthenticated(authStatus);
   }, []);
-
   const toggleSidebar = () => setSidebarActive(!isSidebarActive);
 
   useEffect(() => {
@@ -56,7 +55,7 @@ function App() {
               isAuthenticated ? (
                 <div className={`app ${isSidebarActive ? 'sidebar-active' : ''}`}>
                   <button className="hamburger btn btn-primary" onClick={toggleSidebar}>
-                    <i className="fas fa-bars"></i>
+                  ☰
                   </button>
                   <Sidebar isActive={isSidebarActive} toggleSidebar={toggleSidebar} />
                   <main className="main-content container my-5">

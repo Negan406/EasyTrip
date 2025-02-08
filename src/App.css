@@ -41,7 +41,7 @@ body.dark-mode {
   top: 1rem;
   left: 1rem;
   z-index: 1001;
-  background: red;
+  background: rgb(29, 137, 226);
   height: 23px;
   border: none;
   color: inherit;
@@ -49,6 +49,7 @@ body.dark-mode {
   cursor: pointer;
 }
 
+  
 @media (max-width: 991px) {
   .sidebar {
     transform: translateX(-100%);
@@ -110,6 +111,9 @@ body.dark-mode {
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
 }
+.ss{
+  color: #1cc88a;
+ }
 
 /* Card Responsive Styles */
 .card {
@@ -127,8 +131,31 @@ left:100px ;
 }
 
 @media (max-width: 768px) {
+  #add-product-page{
+    width: 500px;
+  }
+  #valeur{
+    position: relative;
+    right: 75px;
+  }
+  .tb{
+    position: relative;
+    bottom: 90px;
+    left: 220px;
+  }
+ .ss{
+  color: #1cc88a;
+  position: relative;
+  right: 30px;
+ }
+ .sss{
+  color: #4e73df;
+  position: relative;
+  right: 90px;
+}
   .card-body {
     padding: 1rem;
+    width: 300px;
   }
 
   .row > [class*='col-'] {
@@ -150,6 +177,9 @@ left:100px ;
   .col-form-label {
     margin-bottom: 0.5rem;
   }
+}
+.sss{
+  color: #4e73df;
 }
 
 /* User Cards Responsive */
@@ -291,6 +321,11 @@ body.dark-mode .form-select:focus {
   background-color: #ccc;
   transition: .4s;
   border-radius: 34px;
+}
+.sss{
+  color: #4e73df;
+  position: relative;
+  left: 50px;
 }
 
 .slider:before {
@@ -467,5 +502,11 @@ body.dark-mode #users-page .text-muted {
   right: 5px;
   animation: pulse 2s infinite;
 }
-
+.barr{
+  position: relative;
+  bottom: 6px;
+}
+.hamburger{
+  height: 40px;
+}
 
