@@ -1,0 +1,172 @@
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EasyTrip - Vacation Rentals & Experiences</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body style="transition: opacity 0.2s ease">
+  <header>
+    <nav>
+      <div class="logo">
+        <svg width="120" height="40" viewBox="0 0 120 40">
+          <path d="M10,20 Q15,10 20,20 T30,20" fill="none" stroke="#FF385C" stroke-width="3"/>
+          <text x="35" y="25" font-family="Arial" font-size="20" font-weight="bold" fill="#FF385C">EasyTrip</text>
+        </svg>
+      </div>
+      
+      <div class="search-bar">
+        <button>Anywhere</button>
+        <span class="separator"></span>
+        <button>Any week</button>
+        <span class="separator"></span>
+        <button>Add guests</button>
+        <button class="search-button">
+          <i class="fas fa-search"></i>
+        </button>
+      </div>
+
+      <div class="nav-right">
+        <button>Become a host</button>
+        <button><i class="fas fa-globe"></i></button>
+        <div class="profile-menu">
+          <i class="fas fa-bars"></i>
+          <i class="fas fa-user-circle"></i>
+        </div>
+      </div>
+    </nav>
+
+    <div class="filters">
+      <button class="filter-button active">
+        <i class="fas fa-house"></i>
+        <span>All homes</span>
+      </button>
+      <button class="filter-button">
+        <i class="fas fa-mountain"></i>
+        <span>Amazing views</span>
+      </button>
+      <button class="filter-button">
+        <i class="fas fa-umbrella-beach"></i>
+        <span>Beach front</span>
+      </button>
+      <button class="filter-button">
+        <i class="fas fa-swimming-pool"></i>
+        <span>Pools</span>
+      </button>
+      <button class="filter-button">
+        <i class="fas fa-tree"></i>
+        <span>Cabins</span>
+      </button>
+      <button class="filter-button">
+        <i class="fas fa-campground"></i>
+        <span>Camping</span>
+      </button>
+      <button class="filter-button">
+        <i class="fas fa-house-flood-water"></i>
+        <span>Lake front</span>
+      </button>
+      <button class="filter-button">
+        <i class="fas fa-city"></i>
+        <span>Urban stays</span>
+      </button>
+      <button class="filter-button">
+        <i class="fas fa-spa"></i>
+        <span>Luxury</span>
+      </button>
+      <button class="filter-button">
+        <i class="fas fa-snowflake"></i>
+        <span>Ski-in/out</span>
+      </button>
+      <button class="filter-button">
+        <i class="fas fa-water"></i>
+        <span>Islands</span>
+      </button>
+      <button class="filter-button">
+        <i class="fas fa-wine-glass-alt"></i>
+        <span>Vineyards</span>
+      </button>
+      <button class="filter-button">
+        <i class="fas fa-horse"></i>
+        <span>Farms</span>
+      </button>
+      <button class="filter-button">
+        <i class="fas fa-monument"></i>
+        <span>Historic</span>
+      </button>
+      <button class="filter-button">
+        <i class="fas fa-gopuram"></i>
+        <span>Castles</span>
+      </button>
+    </div>
+  </header>
+
+  <main>
+    <div class="listings">
+      <!-- Listing cards will be dynamically loaded -->
+    </div>
+    <div class="loading-spinner">
+      <div class="spinner"></div>
+    </div>
+  </main>
+
+  <button class="back-to-top">
+    <i class="fas fa-arrow-up"></i>
+  </button>
+
+  <footer>
+    <div class="footer-content">
+      <div class="footer-section">
+        <h4>Support</h4>
+        <ul>
+          <li><a href="#">Help Center</a></li>
+          <li><a href="#">Safety information</a></li>
+          <li><a href="#">Cancellation options</a></li>
+        </ul>
+      </div>
+      <div class="footer-section">
+        <h4>Community</h4>
+        <ul>
+          <li><a href="#">EasyTrip.org</a></li>
+          <li><a href="#">Combating discrimination</a></li>
+        </ul>
+      </div>
+      <div class="footer-section">
+        <h4>Hosting</h4>
+        <ul>
+          <li><a href="#">Try hosting</a></li>
+          <li><a href="#">Visit our community forum</a></li>
+          <li><a href="#">How to host responsibly</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>&copy; 2023 EasyTrip, Inc.</p>
+      <div class="footer-links">
+        <a href="#">Privacy</a>
+        <a href="#">Terms</a>
+        <a href="#">Sitemap</a>
+      </div>
+    </div>
+  </footer>
+
+  <div class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <button class="close-sidebar"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="sidebar-content">
+      <div class="sidebar-menu">
+        <a href="index.html" class="sidebar-item active"><i class="fas fa-home"></i> Home</a>
+        <a href="trips.html" class="sidebar-item"><i class="fas fa-suitcase"></i> Trips</a>
+        <a href="wishlist.html" class="sidebar-item"><i class="fas fa-heart"></i> Wishlist</a>
+        <hr>
+        <a href="become-host.html" class="sidebar-item"><i class="fas fa-house-user"></i> Become a Host</a>
+        <a href="#" class="sidebar-item"><i class="fas fa-user"></i> Account</a>
+      </div>
+    </div>
+  </div>
+  <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+  <script src="script.js"></script>
+</body>
+</html>

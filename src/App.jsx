@@ -1,86 +1,38 @@
-import React, { useState, useEffect } from 'react';
-import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import Sidebar from './components/Sidebar';
-import DashboardPage from './pages/DashboardPage';
-import AddProductPage from './pages/AddProductPage';
-import InventoryPage from './pages/InventoryPage';
-import AnalyticsPage from './pages/AnalyticsPage';
-import ClientsPage from './pages/ClientsPage';
-import SuppliersPage from './pages/SuppliersPage';
-import OnlineUsersPage from './pages/OnlineUsersPage';
-import LoginPage from './pages/LoginPage';
-import { RouteProvider } from './context/RouteContext';
-import 'bootstrap/dist/css/bootstrap.min.css';
-import './App.css';
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import Header from "./components/Header";
+import Sidebar from "./components/Sidebar";
+import Home from "./pages/Home";
+import ListingDetails from "./pages/ListingDetails";
+import BecomeHost from "./pages/BecomeHost";
+import AccountSettings from "./pages/AccountSettings";
+import Trips from "./pages/Trips";
+import Wishlist from "./pages/Wishlist";
+import Footer from "./components/Footer";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
+import "./styles.css";
+import { useState } from "react";
 
-function App() {
-  const [isSidebarActive, setSidebarActive] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-
-  useEffect(() => {
-    const authStatus = localStorage.getItem("isAuthenticated") === "true";
-    setIsAuthenticated(authStatus);
-  }, []);
-  const toggleSidebar = () => setSidebarActive(!isSidebarActive);
-
-  useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (window.innerWidth <= 991) {
-        const sidebar = document.querySelector('.sidebar');
-        const hamburger = document.querySelector('.hamburger');
-        if (sidebar && !sidebar.contains(e.target) && hamburger && !hamburger.contains(e.target)) {
-          setSidebarActive(false);
-        }
-      }
-    };
-    const handleResize = () => {
-      if (window.innerWidth > 991) setSidebarActive(false);
-    };
-    document.addEventListener('click', handleClickOutside);
-    window.addEventListener('resize', handleResize);
-    return () => {
-      document.removeEventListener('click', handleClickOutside);
-      window.removeEventListener('resize', handleResize);
-    };
-  }, []);
+const App = () => {
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   return (
-    <RouteProvider>
-      <Router>
-        <Routes>
-          <Route path="/login" element={<LoginPage setIsAuthenticated={setIsAuthenticated} />} />
-          <Route
-            path="/*"
-            element={
-              isAuthenticated ? (
-                <div className={`app ${isSidebarActive ? 'sidebar-active' : ''}`}>
-                  <button className="hamburger btn btn-primary" onClick={toggleSidebar}>
-                  ☰
-                  </button>
-                  <Sidebar isActive={isSidebarActive} toggleSidebar={toggleSidebar} />
-                  <main className="main-content container my-5">
-                    <Routes>
-                      <Route path="/dashboard" element={<DashboardPage />} />
-                      <Route path="/add-product" element={<AddProductPage />} />
-                      <Route path="/inventory" element={<InventoryPage />} />
-                      <Route path="/analytics" element={<AnalyticsPage />} />
-                      <Route path="/clients" element={<ClientsPage />} />
-                      <Route path="/suppliers" element={<SuppliersPage />} />
-                      <Route path="/settings" element={<div>Settings Page (TBD)</div>} />
-                      <Route path="/users" element={<OnlineUsersPage />} />
-                      <Route path="*" element={<Navigate to="/dashboard" />} />
-                    </Routes>
-                  </main>
-                </div>
-              ) : (
-                <Navigate to="/login" />
-              )
-            }
-          />
-        </Routes>
-      </Router>
-    </RouteProvider>
+    <Router>
+      <Header onSidebarToggle={() => setIsSidebarOpen(!isSidebarOpen)} />
+      <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/listing/:id" element={<ListingDetails />} />
+        <Route path="/become-host" element={<BecomeHost />} />
+        <Route path="/account-settings" element={<AccountSettings />} />
+        <Route path="/trips" element={<Trips />} />
+        <Route path="/wishlist" element={<Wishlist />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+      </Routes>
+      <Footer />
+    </Router>
   );
-}
+};
 
 export default App;

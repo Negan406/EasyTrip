@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Listing Details - EasyTrip</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body style="transition: opacity 0.2s ease">
+  <header>
+    <nav>
+      <div class="logo">
+        <a href="index.html">
+          <svg width="120" height="40" viewBox="0 0 120 40">
+            <path d="M10,20 Q15,10 20,20 T30,20" fill="none" stroke="#FF385C" stroke-width="3"/>
+            <text x="35" y="25" font-family="Arial" font-size="20" font-weight="bold" fill="#FF385C">EasyTrip</text>
+          </svg>
+        </a>
+      </div>
+      
+      <div class="nav-right">
+        <button>Become a host</button>
+        <button><i class="fas fa-globe"></i></button>
+        <div class="profile-menu">
+          <i class="fas fa-bars"></i>
+          <i class="fas fa-user-circle"></i>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <main class="listing-details-page">
+    <div class="listing-details-container">
+      <div class="listing-gallery">
+        <div class="main-image">
+          <img src="" alt="Listing Main Image" id="mainImage">
+          <button class="favorite-large"><i class="far fa-heart"></i></button>
+        </div>
+        <div class="image-grid">
+          <!-- Additional images will be loaded dynamically -->
+        </div>
+      </div>
+
+      <div class="listing-content">
+        <div class="listing-info-container">
+          <div class="listing-header">
+            <h1 id="listingTitle"></h1>
+            <div class="listing-meta">
+              <div class="rating-large">
+                <i class="fas fa-star"></i>
+                <span id="rating"></span>
+                <span class="reviews-count"></span>
+              </div>
+              <div class="location">
+                <i class="fas fa-map-marker-alt"></i>
+                <span id="location"></span>
+              </div>
+            </div>
+          </div>
+
+          <div class="host-info">
+            <img src="https://randomuser.me/api/portraits/women/42.jpg" alt="Host" class="host-avatar">
+            <div class="host-details">
+              <h3>Hosted by <span id="hostName">Sarah</span></h3>
+              <p>Superhost · Hosting since 2019</p>
+            </div>
+          </div>
+
+          <div class="listing-description">
+            <p id="description"></p>
+          </div>
+
+          <div class="amenities">
+            <h2>What this place offers</h2>
+            <div class="amenities-grid">
+              <!-- Amenities will be loaded dynamically -->
+            </div>
+          </div>
+        </div>
+
+        <div class="booking-card">
+          <div class="booking-price">
+            <h2>$<span id="price"></span> <span class="per-night">night</span></h2>
+            <div class="rating-small">
+              <i class="fas fa-star"></i>
+              <span id="ratingSmall"></span>
+            </div>
+          </div>
+
+          <form class="booking-form">
+            <div class="date-inputs">
+              <div class="check-in">
+                <label>Check-in</label>
+                <input type="date" required>
+              </div>
+              <div class="check-out">
+                <label>Check-out</label>
+                <input type="date" required>
+              </div>
+            </div>
+
+            <div class="guests-input">
+              <label>Guests</label>
+              <input type="number" min="1" max="16" value="1" required>
+            </div>
+
+            <button type="submit" class="book-button">Book now</button>
+
+            <div class="price-details">
+              <p>You won't be charged yet</p>
+              <div class="price-breakdown">
+                <!-- Price breakdown will be calculated dynamically -->
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <div class="reviews-section">
+        <h2>Reviews</h2>
+        <div class="reviews-summary">
+          <div class="overall-rating">
+            <i class="fas fa-star"></i>
+            <span id="overallRating"></span>
+            <span class="total-reviews"></span>
+          </div>
+          <div class="rating-categories">
+            <!-- Rating categories will be loaded dynamically -->
+          </div>
+        </div>
+        <div class="reviews-list">
+          <!-- Reviews will be loaded dynamically -->
+        </div>
+        <button class="load-more-reviews">Show more reviews</button>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    <div class="footer-content">
+      <div class="footer-section">
+        <h4>Support</h4>
+        <ul>
+          <li><a href="#">Help Center</a></li>
+          <li><a href="#">Safety information</a></li>
+          <li><a href="#">Cancellation options</a></li>
+        </ul>
+      </div>
+      <div class="footer-section">
+        <h4>Community</h4>
+        <ul>
+          <li><a href="#">EasyTrip.org</a></li>
+          <li><a href="#">Combating discrimination</a></li>
+        </ul>
+      </div>
+      <div class="footer-section">
+        <h4>Hosting</h4>
+        <ul>
+          <li><a href="#">Try hosting</a></li>
+          <li><a href="#">Visit our community forum</a></li>
+          <li><a href="#">How to host responsibly</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>&copy; 2023 EasyTrip, Inc.</p>
+      <div class="footer-links">
+        <a href="#">Privacy</a>
+        <a href="#">Terms</a>
+        <a href="#">Sitemap</a>
+      </div>
+    </div>
+  </footer>
+
+  <div class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <button class="close-sidebar"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="sidebar-content">
+      <div class="sidebar-menu">
+        <a href="index.html" class="sidebar-item"><i class="fas fa-home"></i> Home</a>
+        <a href="trips.html" class="sidebar-item"><i class="fas fa-suitcase"></i> Trips</a>
+        <a href="wishlist.html" class="sidebar-item"><i class="fas fa-heart"></i> Wishlist</a>
+        <hr>
+        <a href="become-host.html" class="sidebar-item"><i class="fas fa-house-user"></i> Become a Host</a>
+        <a href="account.html" class="sidebar-item"><i class="fas fa-user"></i> Account</a>
+      </div>
+    </div>
+  </div>
+  <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+  <script src="script.js"></script>
+</body>
+</html>
