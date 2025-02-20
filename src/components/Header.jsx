@@ -6,9 +6,15 @@ import PropTypes from 'prop-types';
 const Header = ({ onSidebarToggle }) => {
   const location = useLocation();
   const navigate = useNavigate();
+  const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true'; // Check login state
 
   const handleBecomeHostClick = () => {
     navigate(location.pathname === "/become-host" ? "/" : "/become-host");
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('isLoggedIn'); // Clear login state
+    navigate('/login'); // Redirect to Login page
   };
 
   return (
@@ -41,6 +47,11 @@ const Header = ({ onSidebarToggle }) => {
             <FontAwesomeIcon icon={faBars} />
             <FontAwesomeIcon icon={faUserCircle} />
           </div>
+          {isLoggedIn && (
+            <button style={{backgroundColor: "red", color: "white"}} className="cta-button logout-button" onClick={handleLogout}>
+              Logout
+            </button>
+          )}
         </div>
       </nav>
     </header>

@@ -2,10 +2,48 @@ import { useState } from "react";
 import Sidebar from "../components/Sidebar";
 import HostRegistrationModal from "../components/HostRegistrationModal";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { useNavigate } from 'react-router-dom';
 
 const BecomeHost = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [newListing, setNewListing] = useState({
+    title: '',
+    location: '',
+    price: '',
+    photo: '',
+    description: ''
+  });
+  const navigate = useNavigate();
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setNewListing({ ...newListing, [name]: value });
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    // Save the new listing to localStorage or send it to a backend
+    const listings = JSON.parse(localStorage.getItem('listings')) || [];
+    listings.push(newListing);
+    localStorage.setItem('listings', JSON.stringify(listings));
+    navigate('/'); // Redirect to Home page
+  };
+
+  const handleGetStarted = () => {
+    const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+    if (isLoggedIn) {
+      navigate('/add-listing');
+    } else {
+      navigate('/login');
+    }
+  };
+
+  const handleManageListings = () => {
+    navigate('/manage-listings');
+  };
+
+  const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
 
   return (
     <>
@@ -13,9 +51,13 @@ const BecomeHost = () => {
       <main className="host-header">
         <h1>Become a Host</h1>
         <p>Earn extra income and unlock new opportunities by sharing your space</p>
-        <button className="cta-button" onClick={() => setIsModalOpen(true)}>
-          Get Started
-        </button>
+        <button className="cta-button" onClick={handleGetStarted}>
+          Get Started 
+        </button>   {isLoggedIn && (
+           <button className="cta-button" onClick={handleManageListings}>
+            Manage Listings
+          </button>
+        )}
       </main>
       <div className="host-features">
         {[{ icon: "fas fa-money-bill-wave", title: "Earn Extra Income" }, 
@@ -37,6 +79,16 @@ const BecomeHost = () => {
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
       />
+      {isModalOpen && (
+        <form onSubmit={handleSubmit} className="listing-form">
+          <input type="text" name="title" placeholder="Title" value={newListing.title} onChange={handleInputChange} required />
+          <input type="text" name="location" placeholder="Location" value={newListing.location} onChange={handleInputChange} required />
+          <input type="number" name="price" placeholder="Price" value={newListing.price} onChange={handleInputChange} required />
+          <input type="text" name="photo" placeholder="Photo URL" value={newListing.photo} onChange={handleInputChange} required />
+          <textarea name="description" placeholder="Description" value={newListing.description} onChange={handleInputChange} required />
+          <button type="submit" className="cta-button">Add Listing</button>
+        </form>
+      )}
     </>
   );
 };

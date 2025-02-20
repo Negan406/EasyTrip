@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from 'react-router-dom';
 import ListingCard from "../components/ListingCard";
 import { storeData } from "../store";
 
@@ -6,29 +7,16 @@ const Home = () => {
   const [listings, setListings] = useState([]);
   const [page, setPage] = useState(1);
   const [selectedCategory, setSelectedCategory] = useState("all");
+  const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchListings = async () => {
-      const newItems = Array.from({ length: 12 }, (_, i) => {
-        const index = listings.length + i;
-        const category = storeData.categories[index % storeData.categories.length];
-        const title = storeData.titles[index % storeData.titles.length];
-        const price = storeData.prices[index % storeData.prices.length];
-        return {
-          id: index + 1,
-          category: category,
-          title: title,
-          price: price,
-          rating: parseFloat((4.5 + Math.random() * 0.5).toFixed(2)),
-          distance: Math.floor(Math.random() * 10) + 1,
-          dates: `May ${Math.floor(Math.random() * 20) + 1}-${Math.floor(Math.random() * 20) + 1}`
-        };
-      });
-      setListings([...listings, ...newItems]);
+    const fetchListings = () => {
+      const storedListings = JSON.parse(localStorage.getItem('listings')) || [];
+      setListings(storedListings);
     };
 
     fetchListings();
-  }, [page]);
+  }, []);
 
   const handleFilterClick = (category) => {
     setSelectedCategory(category);

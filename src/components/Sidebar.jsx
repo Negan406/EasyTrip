@@ -29,7 +29,7 @@ const Sidebar = ({ isOpen, onClose }) => {
           <Link to="/account-settings" onClick={onClose} activeClassName="active">
             <FontAwesomeIcon icon={["fas", "user"]} /> Account
           </Link>
-          <Link to="/login" onClick={onClose} activeClassName="active">
+<Link to="/login" onClick={onClose} activeClassName="active">
             <FontAwesomeIcon icon={["fas", "sign-in-alt"]} /> Login
           </Link>
           <Link to="/register" onClick={onClose} activeClassName="active">
