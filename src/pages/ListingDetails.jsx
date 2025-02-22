@@ -41,7 +41,7 @@ const ListingDetails = () => {
               <h1>{listing.title}</h1>
               <div className="listing-meta">
                 <div className="rating-large">
-                  <i className="fas fa-star"></i> {listing.rating}
+                  <i className="fas fa-star"></i>4.5 {listing.rating}
                 </div>
                 <div className="location">
                   <i className="fas fa-map-marker-alt"></i>  {listing.location}

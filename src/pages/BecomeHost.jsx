@@ -51,10 +51,10 @@ const BecomeHost = () => {
       <main className="host-header">
         <h1>Become a Host</h1>
         <p>Earn extra income and unlock new opportunities by sharing your space</p>
-        <button className="cta-button" onClick={handleGetStarted}>
+        <button  style={{position: 'relative', right: '10px',backgroundColor: 'rgb(11, 226, 11)',color: 'white'}} className="cta-button" onClick={handleGetStarted}>
           Get Started 
         </button>   {isLoggedIn && (
-           <button className="cta-button" onClick={handleManageListings}>
+           <button style={{backgroundColor: 'rgb(11, 226, 11)',color: 'white'}} className="cta-button" onClick={handleManageListings}>
             Manage Listings
           </button>
         )}

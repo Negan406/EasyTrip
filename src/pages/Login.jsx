@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom'; // Correct import for react-router-dom v6
+import { useNavigate, Link } from 'react-router-dom'; // Import Link
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -47,6 +47,10 @@ const Login = () => {
         </div>
         <button type="submit" className="cta-button">Login</button>
       </form>
+      <div style={{display: 'flex', gap: '20px'}} className="login-links">
+        <Link to="/register">Create an Account</Link>
+        <Link to="/forgot-password">Forgot Password?</Link>
+      </div>
     </div>
     </>
   );

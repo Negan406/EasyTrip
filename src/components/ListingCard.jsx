@@ -1,41 +1,77 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faHeart } from "@fortawesome/free-solid-svg-icons";
 import { faHeart as faRegularHeart } from "@fortawesome/free-regular-svg-icons";
 import PropTypes from 'prop-types';
 import { Link } from "react-router-dom";
+import Notification from './Notification';
 
 const ListingCard = ({ listing }) => {
   const [isFavorite, setIsFavorite] = useState(false);
+  const [notification, setNotification] = useState(null);
+
+  useEffect(() => {
+    const wishlist = JSON.parse(localStorage.getItem('wishlist')) || [];
+    const isInWishlist = wishlist.some(item => item.id === listing.id);
+    setIsFavorite(isInWishlist);
+  }, [listing.id]);
+
+  const handleFavoriteClick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+    if (!isLoggedIn) {
+      setNotification({ message: 'Please log in to add items to your wishlist.', type: 'info' });
+      return;
+    }
+
+    const wishlist = JSON.parse(localStorage.getItem('wishlist')) || [];
+    if (!isFavorite) {
+      wishlist.push(listing);
+      setNotification({ message: 'Added to wishlist!', type: 'success' });
+    } else {
+      const index = wishlist.findIndex(item => item.id === listing.id);
+      if (index !== -1) wishlist.splice(index, 1);
+      setNotification({ message: 'Removed from wishlist.', type: 'info' });
+    }
+    localStorage.setItem('wishlist', JSON.stringify(wishlist));
+    setIsFavorite(!isFavorite);
+  };
 
   return (
-    <Link to={`/listing/${listing.id}`} className="listing-card">
-      <div className="listing-image">
-        <img src={listing.photo} alt={listing.title} />
-        <button 
-          className="favorite" 
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            setIsFavorite(!isFavorite);
-          }}
-        >
-          <FontAwesomeIcon icon={isFavorite ? faHeart : faRegularHeart} />
-        </button>
-      </div>
-      <div className="listing-info">
-        <div className="listing-title">
-          <h3>{listing.title}</h3>
-          <div className="rating">
-            <i className="fas fa-star"></i> {listing.rating}
-          </div>
+    <>
+      {notification && (
+        <Notification
+          message={notification.message}
+          type={notification.type}
+          onClose={() => setNotification(null)}
+        />
+      )}
+      <Link to={`/listing/${listing.id}`} className="listing-card">
+        <div className="listing-image">
+          <img  src={listing.photo} alt={listing.title} />
+          <button 
+            className="favorite" 
+            onClick={handleFavoriteClick}
+          >
+            <FontAwesomeIcon icon={isFavorite ? faHeart : faRegularHeart} />
+          </button>
         </div>
-        <p className="listing-details">{listing.location}</p>
-        <p className="listing-dates">{listing.dates}</p>
-        <p className="listing-price"><strong>${listing.price}</strong> night</p>
-        <p className="listing-description">{listing.description}</p>
-      </div>
-    </Link>
+        <div className="listing-info">
+          <div className="listing-title">
+            <h3>{listing.title}</h3>
+            <div style={{backgroundColor: "blue", color: "white",borderRadius: "20px",padding: "5px",fontSize: "13px"}} className="rating">
+              <i style={{color: "yellow"}} className="fas fa-star"></i>4.05 {listing.rating}
+            </div>
+          </div>
+          <p className="listing-details">{listing.location}</p>
+          <p className="listing-dates">date{listing.dates}</p>
+          <p style={{color: "blue", fontSize: "16px"}} className="listing-price"><strong>${listing.price}</strong> night</p>
+          <p className="listing-description">{listing.description}</p>
+        </div>
+      </Link>
+    </>
   );
 };
 

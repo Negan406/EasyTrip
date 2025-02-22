@@ -185,12 +185,22 @@ main {
   transition: transform 0.2s ease, opacity 0.2s ease;
   text-decoration: none;
   color: inherit;
+  cursor: pointer;
+  margin: 10px;
+  border: 0.5px solid #EBEBEB;
+  border-radius: 12px;
+  box-shadow: 0 2px 2px rgba(0,0,0,0.1);
+  overflow: hidden;
+  padding: 10px;
+  height: 370px;
 }
 
 .listing-card:hover {
   transform: translateY(-6px);
   opacity: 0.9;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
   
+
 }
 
 .listing-image {
@@ -1382,4 +1392,62 @@ html {
   margin-bottom: 20px;
   margin-top: 20px;
   width: 500px;
+}
+
+.wishlist-item {
+  position: relative;
+  margin-bottom: 20px;
+}
+
+.remove-button {
+  background-color: #ff4d4d;
+  color: white;
+  border: none;
+  padding: 10px;
+  border-radius: 5px;
+  cursor: pointer;
+  margin-top: 10px;
+  transition: background-color 0.3s;
+}
+
+.remove-button:hover {
+  background-color: #e60000;
+}
+
+.notification {
+  position: fixed;
+  top: 100px;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  padding: 15px 20px;
+  border-radius: 5px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  z-index: 1000;
+  transition: opacity 0.3s ease;
+  opacity: 1;
+}
+
+.notification.success {
+  background-color: #4caf50;
+}
+
+.notification.error {
+  background-color: #f44336;
+}
+
+.notification.info {
+  background-color: #2196f3;
+}
+
+.close-button {
+  background: none;
+  border: none;
+  color: #fff;
+  font-size: 1.2rem;
+  cursor: pointer;
+  margin-left: 10px;
 }

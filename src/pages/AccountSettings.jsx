@@ -1,6 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Sidebar from "../components/Sidebar";
-
 
 const AccountSettings = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -10,9 +9,17 @@ const AccountSettings = () => {
     phone: ""
   });
 
+  useEffect(() => {
+    const user = JSON.parse(localStorage.getItem('user'));
+    if (user) {
+      setFormData(user);
+    }
+  }, []);
+
   const handleSubmit = (e) => {
     e.preventDefault();
     console.log("Form submitted:", formData);
+    localStorage.setItem('user', JSON.stringify(formData)); // Save changes
   };
 
   return (
@@ -23,31 +30,31 @@ const AccountSettings = () => {
         <div className="account-content">
           <div className="account-menu">
             <a href="#profile" className="account-menu-item active">
-            <i className="fas fa-user"></i> Personal Information
+              <i className="fas fa-user"></i> Personal Information
             </a>
             <a href="#security" className="account-menu-item">
-            <i className="fas fa-lock"></i> Login & Security
+              <i className="fas fa-lock"></i> Login & Security
             </a>
             <a href="#payments" className="account-menu-item">
-            <i className="fas fa-credit-card"></i> Payments & Payouts
+              <i className="fas fa-credit-card"></i> Payments & Payouts
             </a>
             <a href="#notifications" className="account-menu-item">
-            <i className="fas fa-bell"></i> Notifications
+              <i className="fas fa-bell"></i> Notifications
             </a>
             <a href="#privacy" className="account-menu-item">
-            <i className="fas fa-shield-alt"></i>Privacy & Sharing
+              <i className="fas fa-shield-alt"></i> Privacy & Sharing
             </a>
           </div>
           <div className="account-details">
             <div className="profile-section">
               <div className="profile-header">
                 <div className="profile-picture">
-                <i className="fas fa-user-circle"></i>
+                  <i className="fas fa-user-circle"></i>
                   <button className="update-photo">Update photo</button>
                 </div>
                 <div className="profile-info">
                   <h2>Personal Information</h2>
-                  <p>Update your information and how it s shared with the EasyTrip community</p>
+                  <p>Update your information and how it's shared with the EasyTrip community</p>
                 </div>
               </div>
               <form onSubmit={handleSubmit} className="profile-form">
