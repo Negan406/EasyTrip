@@ -2,11 +2,13 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faGlobe, faBars, faUserCircle, faSearch } from "@fortawesome/free-solid-svg-icons";
 import { useLocation, useNavigate } from "react-router-dom";
 import PropTypes from 'prop-types';
+import { useState } from 'react';
 
-const Header = ({ onSidebarToggle }) => {
+const Header = ({ onSidebarToggle, onSearch }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true'; // Check login state
+  const [searchTerm, setSearchTerm] = useState('');
 
   const handleBecomeHostClick = () => {
     navigate(location.pathname === "/become-host" ? "/" : "/become-host");
@@ -15,6 +17,10 @@ const Header = ({ onSidebarToggle }) => {
   const handleLogout = () => {
     localStorage.removeItem('isLoggedIn'); // Clear login state
     navigate('/login'); // Redirect to Login page
+  };
+
+  const handleSearch = () => {
+    onSearch(searchTerm);
   };
 
   return (
@@ -26,13 +32,14 @@ const Header = ({ onSidebarToggle }) => {
             <text x="35" y="25" fontFamily="Arial" fontSize="20" fontWeight="bold" fill="#0098f0">EasyTrip</text>
           </svg>
         </div>
-        <div className="search-bar">
-          <button>Anywhere</button>
-          <span className="separator" />
-          <button>Any week</button>
-          <span className="separator" />
-          <button>Add guests</button>
-          <button className="search-button">
+        <div style={{width: '60%',height: '40px'}} className="search-bar">
+          <input style={{borderRadius: '10px',padding: '10px',width: '100%',border: 'none',outline: 'none'}}
+            type="text"
+            placeholder="Search by location"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+          <button onClick={handleSearch}>
             <FontAwesomeIcon icon={faSearch} />
           </button>
         </div>
@@ -60,6 +67,7 @@ const Header = ({ onSidebarToggle }) => {
 
 Header.propTypes = {
   onSidebarToggle: PropTypes.func.isRequired,
+  onSearch: PropTypes.func.isRequired,
 };
 
 export default Header;

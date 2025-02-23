@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, NavLink } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faTimes } from "@fortawesome/free-solid-svg-icons";
 import PropTypes from 'prop-types';
@@ -15,34 +15,36 @@ const Sidebar = ({ isOpen, onClose }) => {
       </div>
       <div className="sidebar-content">
         <div className="sidebar-menu">
-          <Link to="/" onClick={onClose} activeClassName="active">
+          <NavLink to="/" exact="true" activeClassName="active" onClick={onClose}>
             <i className="fas fa-home"></i> Home
-          </Link>
-          <Link to="/trips" onClick={onClose} activeClassName="active">
-            <i className="fas fa-suitcase"></i> Trips
-          </Link>
+          </NavLink>
           {isLoggedIn && (
-            <Link to="/wishlist" onClick={onClose} activeClassName="active">
+            <NavLink to="/trips" activeClassName="active" onClick={onClose}>
+              <i className="fas fa-suitcase"></i> Trips
+            </NavLink>
+          )}
+          {isLoggedIn && (
+            <NavLink to="/wishlist" activeClassName="active" onClick={onClose}>
               <i className="fas fa-heart"></i> Wishlists
-            </Link>
+            </NavLink>
           )}
           <hr />
-          <Link to="/become-host" onClick={onClose} activeClassName="active">
+          <NavLink to="/become-host" activeClassName="active" onClick={onClose}>
             <FontAwesomeIcon icon={["fas", "house-user"]} /> Become a Host
-          </Link>
+          </NavLink>
           {isLoggedIn && (
-            <Link to="/account-settings" onClick={onClose} activeClassName="active">
+            <NavLink to="/account-settings" activeClassName="active" onClick={onClose}>
               <FontAwesomeIcon icon={["fas", "user"]} /> Account
-            </Link>
+            </NavLink>
           )}
           {!isLoggedIn && (
             <>
-              <Link to="/login" onClick={onClose} activeClassName="active">
+              <NavLink to="/login" activeClassName="active" onClick={onClose}>
                 <FontAwesomeIcon icon={["fas", "sign-in-alt"]} /> Login
-              </Link>
-              <Link to="/register" onClick={onClose} activeClassName="active">
+              </NavLink>
+              <NavLink to="/register" activeClassName="active" onClick={onClose}>
                 <FontAwesomeIcon icon={["fas", "user-plus"]} /> Register
-              </Link>
+              </NavLink>
             </>
           )}
         </div>

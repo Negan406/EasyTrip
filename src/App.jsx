@@ -13,19 +13,27 @@ import Register from "./pages/Register";
 import AddListing from "./pages/AddListing";
 import ManageListings from "./pages/ManageListings";
 import EditListing from "./pages/EditListing";
+import Payment from "./pages/Payment";
+import ManageBookings from "./pages/ManageBookings";
 import "./styles.css";
 import { useState } from "react";
 import ErrorBoundary from "./components/ErrorBoundary";
+import ClearStorageButton from "./components/ClearStorageButton";
 
 const App = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const handleSearch = (term) => {
+    setSearchTerm(term);
+  };
 
   return (
     <Router>
-      <Header onSidebarToggle={() => setIsSidebarOpen(!isSidebarOpen)} />
+      <Header onSidebarToggle={() => setIsSidebarOpen(!isSidebarOpen)} onSearch={handleSearch} />
       <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
       <Routes>
-        <Route path="/" element={<Home />} />
+        <Route path="/" element={<Home searchTerm={searchTerm} />} />
         <Route path="/listing/:id" element={
           <ErrorBoundary>
             <ListingDetails />
@@ -40,6 +48,8 @@ const App = () => {
         <Route path="/add-listing" element={<AddListing />} />
         <Route path="/manage-listings" element={<ManageListings />} />
         <Route path="/edit-listing/:id" element={<EditListing />} />
+        <Route path="/payment" element={<Payment />} />
+        <Route path="/manage-bookings" element={<ManageBookings />} />
       </Routes>
       <Footer />
     </Router>

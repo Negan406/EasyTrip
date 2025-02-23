@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from 'react-router-dom';
+import LoadingSpinner from "../components/LoadingSpinner"; // Import the LoadingSpinner
 
 const EditListing = () => {
   const { id } = useParams();
   const [listing, setListing] = useState(null);
+  const [loading, setLoading] = useState(false); // Add loading state
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -38,31 +40,42 @@ const EditListing = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    const storedListings = JSON.parse(localStorage.getItem('listings')) || [];
-    const updatedListings = storedListings.map((item) =>
-      item.id === listing.id ? listing : item
-    );
-    localStorage.setItem('listings', JSON.stringify(updatedListings));
-    navigate('/manage-listings');
+    setLoading(true); // Start loading
+    setTimeout(() => {
+      const storedListings = JSON.parse(localStorage.getItem('listings')) || [];
+      const updatedListings = storedListings.map((item) =>
+        item.id === listing.id ? listing : item
+      );
+      localStorage.setItem('listings', JSON.stringify(updatedListings));
+      setLoading(false); // End loading
+      navigate('/manage-listings');
+    }, 1000); // Simulate a delay
   };
 
   if (!listing) return <div>Loading...</div>;
 
   return (
-    <><br /><br />
-    <div className="edit-listing-container">
-      <h1>Edit Listing</h1>
-      <form onSubmit={handleSubmit} className="listing-form">
-        <input type="text" name="title" value={listing.title} onChange={handleInputChange} required />
-        <input type="text" name="location" value={listing.location} onChange={handleInputChange} required />
-        <input type="number" name="price" value={listing.price} onChange={handleInputChange} required />
-        <input type="text" name="category" value={listing.category} onChange={handleInputChange} required />
-        <textarea name="description" value={listing.description} onChange={handleInputChange} required />
-        <input type="file" accept="image/*" onChange={handleFileChange} />
-        {listing.photo && <img width={"100%"}  src={listing.photo} alt="Preview" className="image-preview" />}
-        <button type="submit" className="cta-button">Save Changes</button>
-      </form>
-    </div>
+    <>
+      <br /><br />
+      <div className="edit-listing-container">
+        {loading ? (
+          <LoadingSpinner />
+        ) : (
+          <>
+            <h1>Edit Listing</h1>
+            <form onSubmit={handleSubmit} className="listing-form">
+              <input type="text" name="title" value={listing.title} onChange={handleInputChange} required />
+              <input type="text" name="location" value={listing.location} onChange={handleInputChange} required />
+              <input type="number" name="price" value={listing.price} onChange={handleInputChange} required />
+              <input type="text" name="category" value={listing.category} onChange={handleInputChange} required />
+              <textarea name="description" value={listing.description} onChange={handleInputChange} required />
+              <input type="file" accept="image/*" onChange={handleFileChange} />
+              {listing.photo && <img width={"100%"} src={listing.photo} alt="Preview" className="image-preview" />}
+              <button type="submit" className="cta-button">Save Changes</button>
+            </form>
+          </>
+        )}
+      </div>
     </>
   );
 };

@@ -323,24 +323,25 @@ html {
 
 /* Loading spinner */
 .loading-spinner {
-  display: none;
+  display: flex;
   justify-content: center;
   align-items: center;
-  padding: 2rem;
+  height: 100vh; /* Full screen height */
+  position: fixed;
+  top: 0;
+  left: 0;
   width: 100%;
-}
-
-.loading-spinner.active {
-  display: flex;
+  background-color: rgba(255, 255, 255, 0.8); /* Semi-transparent background */
+  z-index: 1000;
 }
 
 .spinner {
-  width: 40px;
-  height: 40px;
-  border: 4px solid var(--bg-light);
-  border-top: 4px solid var(--primary-color);
+  width: 50px;
+  height: 50px;
+  border: 5px solid #f3f3f3;
+  border-top: 5px solid var(--primary-color);
   border-radius: 50%;
-  animation: spin 1s linear infinite;
+  animation: spin 2s linear infinite;
 }
 
 @keyframes spin {
@@ -1416,7 +1417,7 @@ html {
 
 .notification {
   position: fixed;
-  top: 100px;
+  top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
   padding: 15px 20px;
@@ -1451,3 +1452,151 @@ html {
   cursor: pointer;
   margin-left: 10px;
 }
+
+.payment-container {
+  max-width: 500px;
+  margin: 0 auto;
+  padding: 20px;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.payment-form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.payment-form input {
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  font-size: 16px;
+}
+
+.payment-form .cta-button {
+  background-color: #0098f0;
+  color: white;
+  padding: 10px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background-color 0.3s;
+}
+
+.payment-form .cta-button:hover {
+  background-color: #007acc;
+}
+
+.trip-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.trip-image {
+  width: 100px;
+  height: 100px;
+  object-fit: cover;
+  border-radius: 8px;
+  margin-right: 20px;
+}
+
+.trip-details {
+  flex-grow: 1;
+}
+
+.booking-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  padding: 10px;
+}
+
+.booking-image {
+  width: 100px;
+  height: 100px;
+  object-fit: cover;
+  border-radius: 8px;
+  margin-right: 20px;
+}
+
+.booking-details {
+  flex-grow: 1;
+}
+
+.accept-button {
+  background-color: #4caf50;
+  color: white;
+  padding: 5px 10px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-right: 10px;
+  transition: background-color 0.3s;
+}
+
+.accept-button:hover {
+  background-color: #45a049;
+}
+
+.refuse-button {
+  background-color: #f44336;
+  color: white;
+  padding: 5px 10px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.refuse-button:hover {
+  background-color: #e53935;
+}
+
+.delete-trip-button {
+  background-color: #f44336;
+  color: white;
+  padding: 5px 10px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  margin-top: 10px;
+}
+
+.delete-trip-button:hover {
+  background-color: #e53935;
+}
+
+.delete-booking-button {
+  background-color: #f44336;
+  color: white;
+  padding: 5px 10px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  margin-top: 10px;
+}
+
+.delete-booking-button:hover {
+  background-color: #e53935;
+}
+.trip-item:hover{
+  transform: scale(1.02);
+  transition: transform 0.3s ease;
+  background-color: #f0f0f0;
+}
+
+

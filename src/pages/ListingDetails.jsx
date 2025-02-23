@@ -1,12 +1,20 @@
 import { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import LoadingSpinner from "../components/LoadingSpinner";
+import Notification from "../components/Notification";
 
 const ListingDetails = () => {
   const [listing, setListing] = useState(null);
   const { id } = useParams();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [notification, setNotification] = useState(null);
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [isAlreadyBooked, setIsAlreadyBooked] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchListing = () => {
@@ -17,15 +25,56 @@ const ListingDetails = () => {
       } else {
         console.error('Listing not found');
       }
+      setLoading(false);
     };
     fetchListing();
+
+    // Check if the listing is already booked
+    const trips = JSON.parse(localStorage.getItem('trips')) || [];
+    const isBooked = trips.some(trip => trip.listing.id === parseInt(id));
+    setIsAlreadyBooked(isBooked);
   }, [id]);
+
+  const clearSpecificItem = (key) => {
+    localStorage.removeItem(key);
+    alert(`${key} data cleared!`);
+  };
+
+  const handleBookNow = (e) => {
+    e.preventDefault();
+    if (isAlreadyBooked) {
+      setNotification({ message: 'This listing is already booked by you.', type: 'error' });
+      return;
+    }
+
+    const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+    if (!isLoggedIn) {
+      setNotification({ message: 'Please log in to book this listing.', type: 'error' });
+      return;
+    }
+
+    // Navigate to the Payment page with listing details
+    navigate('/payment', { state: { listing, startDate, endDate } });
+  };
+
+  const closeNotification = () => {
+    setNotification(null);
+  };
+
+  if (loading) return <LoadingSpinner />;
 
   if (!listing) return <div>Loading...</div>;
 
   return (
     <>
       <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
+      {notification && (
+        <Notification
+          message={notification.message}
+          type={notification.type}
+          onClose={closeNotification}
+        />
+      )}
       <main className="listing-details-page">
         <div className="listing-gallery">
           <div className="main-image">
@@ -78,13 +127,13 @@ const ListingDetails = () => {
             <div className="booking-price">
               <h2>$ {listing.price} <span className="per-night">night</span></h2>
             </div>
-            <form className="booking-form">
+            <form className="booking-form" onSubmit={handleBookNow}>
               <div className="date-inputs">
-                <input type="date" placeholder="Check-in" required />
-                <input type="date" placeholder="Check-out" required />
+                <input type="date" placeholder="Check-in" value={startDate} onChange={(e) => setStartDate(e.target.value)} required />
+                <input type="date" placeholder="Check-out" value={endDate} onChange={(e) => setEndDate(e.target.value)} required />
               </div>
               <input type="number" min="1" max="16" placeholder="Guests" required />
-              <button type="submit" className="book-button">Book now</button>
+              <button type="submit" className="book-button" disabled={isAlreadyBooked}>Book now</button>
             </form>
           </div>
         </div>

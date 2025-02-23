@@ -3,6 +3,7 @@ import Sidebar from "../components/Sidebar";
 import HostRegistrationModal from "../components/HostRegistrationModal";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useNavigate } from 'react-router-dom';
+import Notification from "../components/Notification";
 
 const BecomeHost = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -14,7 +15,9 @@ const BecomeHost = () => {
     photo: '',
     description: ''
   });
+  const [isLoggedIn, setIsLoggedIn] = useState(localStorage.getItem('isLoggedIn') === 'true');
   const navigate = useNavigate();
+  const [notification, setNotification] = useState(null);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -43,11 +46,30 @@ const BecomeHost = () => {
     navigate('/manage-listings');
   };
 
-  const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+  const handleManageBookings = () => {
+    navigate('/manage-bookings');
+  };
+
+  const handleBookNow = (e) => {
+    e.preventDefault();
+    if (isAlreadyBooked) {
+      setNotification({ message: 'This listing is already booked by you.', type: 'error' });
+      return;
+    }
+
+    navigate('/payment', { state: { listing, startDate, endDate } });
+  };
 
   return (
     <>
       <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
+      {notification && (
+        <Notification
+          message={notification.message}
+          type={notification.type}
+          onClose={() => setNotification(null)}
+        />
+      )}
       <main className="host-header">
         <h1>Become a Host</h1>
         <p>Earn extra income and unlock new opportunities by sharing your space</p>
@@ -57,6 +79,9 @@ const BecomeHost = () => {
            <button style={{backgroundColor: 'rgb(11, 226, 11)',color: 'white'}} className="cta-button" onClick={handleManageListings}>
             Manage Listings
           </button>
+        )}
+        {isLoggedIn && (
+          <button style={{position: 'relative', left: '10px',backgroundColor: 'rgb(11, 226, 11)',color: 'white'}} onClick={handleManageBookings} className="cta-button">Manage Bookings</button>
         )}
       </main>
       <div className="host-features">

@@ -1,3 +1,4 @@
+import React from 'react';
 import { useState, useEffect } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faHeart } from "@fortawesome/free-solid-svg-icons";
@@ -28,15 +29,30 @@ const ListingCard = ({ listing }) => {
 
     const wishlist = JSON.parse(localStorage.getItem('wishlist')) || [];
     if (!isFavorite) {
-      wishlist.push(listing);
+      wishlist.push({
+        id: listing.id,
+        title: listing.title,
+        location: listing.location,
+        price: listing.price,
+        photo: listing.photo
+      });
       setNotification({ message: 'Added to wishlist!', type: 'success' });
     } else {
       const index = wishlist.findIndex(item => item.id === listing.id);
       if (index !== -1) wishlist.splice(index, 1);
       setNotification({ message: 'Removed from wishlist.', type: 'info' });
     }
-    localStorage.setItem('wishlist', JSON.stringify(wishlist));
-    setIsFavorite(!isFavorite);
+
+    try {
+      localStorage.setItem('wishlist', JSON.stringify(wishlist));
+      setIsFavorite(!isFavorite);
+    } catch (error) {
+      if (error.name === 'QuotaExceededError') {
+        alert('Storage limit exceeded. Please clear some data.');
+      } else {
+        console.error('Failed to update wishlist:', error);
+      }
+    }
   };
 
   return (
@@ -50,7 +66,7 @@ const ListingCard = ({ listing }) => {
       )}
       <Link to={`/listing/${listing.id}`} className="listing-card">
         <div className="listing-image">
-          <img  src={listing.photo} alt={listing.title} />
+          <img  src={listing.photo} alt={listing.title} className="listing-image" />
           <button 
             className="favorite" 
             onClick={handleFavoriteClick}
