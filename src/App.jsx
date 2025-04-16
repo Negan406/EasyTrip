@@ -30,6 +30,7 @@ const App = () => {
 
   return (
     <Router>
+      
       <Header onSidebarToggle={() => setIsSidebarOpen(!isSidebarOpen)} onSearch={handleSearch} />
       <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
       <Routes>
