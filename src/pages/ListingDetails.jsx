@@ -78,10 +78,17 @@ const ListingDetails = () => {
       <main className="listing-details-page">
         <div className="listing-gallery">
           <div className="main-image">
-            <img src={listing.photo} alt={listing.title} />
+            <img src={listing.mainPhoto || listing.photo} alt={listing.title} />
             <button className="favorite-large">
               <FontAwesomeIcon icon={["far", "heart"]} />
             </button>
+          </div>
+          <div className="additional-images">
+            {listing.additionalPhotos && listing.additionalPhotos.slice(0, 3).map((photo, index) => (
+              <div key={index} className="additional-image">
+                <img src={photo} alt={`${listing.title} - ${index + 1}`} />
+              </div>
+            ))}
           </div>
         </div>
         <div className="listing-content">
@@ -137,6 +144,81 @@ const ListingDetails = () => {
             </form>
           </div>
         </div>
+
+        <style jsx>{`
+          .listing-gallery {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin-bottom: 2rem;
+          }
+
+          .main-image {
+            position: relative;
+            width: 100%;
+            height: 400px;
+            border-radius: 12px;
+            overflow: hidden;
+          }
+
+          .main-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+          }
+
+          .additional-images {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            height: 200px;
+          }
+
+          .additional-image {
+            position: relative;
+            border-radius: 12px;
+            overflow: hidden;
+            cursor: pointer;
+          }
+
+          .additional-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.3s ease;
+          }
+
+          .additional-image:hover img {
+            transform: scale(1.05);
+          }
+
+          .favorite-large {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: white;
+            border: none;
+            border-radius: 50%;
+            padding: 0.5rem;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+            z-index: 1;
+          }
+
+          .favorite-large:hover {
+            transform: scale(1.1);
+          }
+
+          @media (max-width: 768px) {
+            .main-image {
+              height: 300px;
+            }
+
+            .additional-images {
+              height: 150px;
+            }
+          }
+        `}</style>
       </main>
     </>
   );

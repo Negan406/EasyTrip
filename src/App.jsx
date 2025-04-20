@@ -15,14 +15,26 @@ import ManageListings from "./pages/ManageListings";
 import EditListing from "./pages/EditListing";
 import Payment from "./pages/Payment";
 import ManageBookings from "./pages/ManageBookings";
+import ManageUsers from './pages/ManageUsers'; // Import the ManageUsers page
+import PendingListings from "./pages/PendingListings"; // Add this import
 import "./styles.css";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import ErrorBoundary from "./components/ErrorBoundary";
 import ClearStorageButton from "./components/ClearStorageButton";
+import AOS from 'aos';
+import 'aos/dist/aos.css';
 
 const App = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+
+  useEffect(() => {
+    AOS.init({
+      duration: 800,
+      once: false,
+      mirror: true
+    });
+  }, []);
 
   const handleSearch = (term) => {
     setSearchTerm(term);
@@ -51,6 +63,8 @@ const App = () => {
         <Route path="/edit-listing/:id" element={<EditListing />} />
         <Route path="/payment" element={<Payment />} />
         <Route path="/manage-bookings" element={<ManageBookings />} />
+        <Route path="/manage-users" element={<ManageUsers />} /> {/* Add route for ManageUsers */}
+        <Route path="/pending-listings" element={<PendingListings />} /> {/* Add this route */}
       </Routes>
       <Footer />
     </Router>

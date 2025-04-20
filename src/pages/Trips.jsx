@@ -72,7 +72,11 @@ const Trips = () => {
           ) : (
             trips.map((trip, index) => (
               <div key={index} className="trip-item">
-                <img src={trip.listing?.photo || ''} alt={trip.listing?.title || 'Trip Image'} className="trip-image" />
+                <img 
+                  src={trip.listing?.mainPhoto || trip.listing?.photo || '/default-trip-image.jpg'} 
+                  alt={trip.listing?.title || 'Trip Image'} 
+                  className="trip-image" 
+                />
                 <div className="trip-details">
                   <h3>{trip.listing?.title || 'Unknown Title'}</h3>
                   <p>{trip.listing?.location || 'Unknown Location'}</p>

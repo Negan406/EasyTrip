@@ -1,9 +1,15 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Sidebar from "../components/Sidebar";
 import HostRegistrationModal from "../components/HostRegistrationModal";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useNavigate } from 'react-router-dom';
 import Notification from "../components/Notification";
+import AOS from 'aos';
+import 'aos/dist/aos.css';
+import im1 from "../pages/announce-advertisement-poster-background-illustration-free-vector.jpg";
+import im2 from "../pages/th.jpeg";
+import im3 from "../pages/ge.png";
+import im4 from "../pages/tr.webp";
 
 const BecomeHost = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -18,6 +24,14 @@ const BecomeHost = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(localStorage.getItem('isLoggedIn') === 'true');
   const navigate = useNavigate();
   const [notification, setNotification] = useState(null);
+  const role = localStorage.getItem('role');
+
+  useEffect(() => {
+    AOS.init({
+      duration: 1000,
+      once: true
+    });
+  }, []);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -38,7 +52,13 @@ const BecomeHost = () => {
     if (isLoggedIn) {
       navigate('/add-listing');
     } else {
-      navigate('/login');
+      setNotification({ 
+        message: 'Please login first to become a host', 
+        type: 'info' 
+      });
+      setTimeout(() => {
+        navigate('/login');
+      }, 2000);
     }
   };
 
@@ -61,7 +81,7 @@ const BecomeHost = () => {
   };
 
   return (
-    <>
+    <div className="become-host-page">
       <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
       {notification && (
         <Notification
@@ -70,36 +90,95 @@ const BecomeHost = () => {
           onClose={() => setNotification(null)}
         />
       )}
-      <main className="host-header">
+
+      {/* Original Host Header with Buttons */}
+      <section className="host-header">
         <h1>Become a Host</h1>
-        <p>Earn extra income and unlock new opportunities by sharing your space</p>
-        <button  style={{position: 'relative', right: '10px',backgroundColor: 'rgb(11, 226, 11)',color: 'white'}} className="cta-button" onClick={handleGetStarted}>
-          Get Started 
-        </button>   {isLoggedIn && (
-           <button style={{backgroundColor: 'rgb(11, 226, 11)',color: 'white'}} className="cta-button" onClick={handleManageListings}>
-            Manage Listings
+        <p>Publier votre logement sur Airbnb, c'est facile</p>
+        <div className="header-buttons" data-aos="fade-up">
+          <button 
+            className="cta-button" 
+            onClick={handleGetStarted}
+            style={{backgroundColor: 'black', color: 'white', position: 'relative', right: '10px'}}
+          >
+            Get Started 
           </button>
-        )}
-        {isLoggedIn && (
-          <button style={{position: 'relative', left: '10px',backgroundColor: 'rgb(11, 226, 11)',color: 'white'}} onClick={handleManageBookings} className="cta-button">Manage Bookings</button>
-        )}
-      </main>
-      <div className="host-features">
-        {[{ icon: "fas fa-money-bill-wave", title: "Earn Extra Income" }, 
-          { icon: "fas fa-shield-alt", title: "Host with Confidence" },
-          { icon: "fas fa-hand-holding-heart", title: "Welcome Guests" }]
-          .map((feature, index) => (
-            <div key={index} className="feature-card">
-              <FontAwesomeIcon icon={feature.icon.split(" ")} />
-              <h3>{feature.title}</h3>
-              <p>{feature.title === "Earn Extra Income" ? 
-                "Turn your extra space into extra income and pursue what you love." :
-                feature.title === "Host with Confidence" ?
-                  "We've got your back with liability insurance and property damage protection." :
-                  "Meet interesting people from around the world and create lasting connections."}</p>
-            </div>
-          ))}
-      </div>
+          
+          {isLoggedIn && (
+            <button 
+              className="cta-button"
+              onClick={handleManageListings}
+              style={{backgroundColor: 'rgb(11, 226, 11)', color: 'white'}}
+            >
+              Manage Listings
+            </button>
+          )}
+          
+          {isLoggedIn && (
+            <button 
+              className="cta-button"
+              onClick={handleManageBookings}
+              style={{backgroundColor: 'rgb(11, 226, 11)', color: 'white', position: 'relative', left: '10px'}}
+            >
+              Manage Bookings
+            </button>
+          )}
+          
+          {role === 'admin' && (
+            <button 
+              className="cta-button"
+              onClick={() => navigate('/pending-listings')}
+              style={{marginLeft: '20px'}}
+            >
+              Review Pending Listings
+            </button>
+          )}
+        </div>
+      </section>
+
+      {/* New Feature Sections */}
+      <section className="hero-section">
+        <div className="hero-content" data-aos="fade-up">
+          <h1>Tous les outils qu'il vous faut en une même application</h1>
+          <p>Nous protégeons votre logement, quel que soit votre style d'accueil</p>
+        </div>
+      </section>
+
+      {/* Features Section */}
+      <section className="features-section">
+        <div className="feature-card" data-aos="fade-right">
+          <img src={im1} alt="Configuration" />
+          <div className="feature-content">
+            <h2>Configuration de votre annonce</h2>
+            <p>Photographies de votre logement, configuration des tarifs et création d'un guide d'arrivée</p>
+          </div>
+        </div>
+
+        <div className="feature-card" data-aos="fade-left">
+          <img src={im2} alt="Préparation" />
+          <div className="feature-content">
+            <h2>Préparation de votre logement</h2>
+            <p>Préparation, ménage et service de maintenance pour votre logement</p>
+          </div>
+        </div>
+
+        <div className="feature-card" data-aos="fade-right">
+          <img src={im3} alt="Réservations" />
+          <div className="feature-content">
+            <h2>Gestion de vos réservations</h2>
+            <p>Gestion de vos réservations et communication avec les voyageurs</p>
+          </div>
+        </div>
+
+        <div className="feature-card" data-aos="fade-left">
+          <img src={im4} alt="Accompagnement" />
+          <div className="feature-content">
+            <h2>Accompagnement des voyageurs</h2>
+            <p>Gestion des arrivées, des départs et des demandes sur place</p>
+          </div>
+        </div>
+      </section>
+
       <HostRegistrationModal 
         isOpen={isModalOpen} 
         onClose={() => setIsModalOpen(false)} 
@@ -114,7 +193,117 @@ const BecomeHost = () => {
           <button type="submit" className="cta-button">Add Listing</button>
         </form>
       )}
-    </>
+
+      <style jsx>{`
+        .header-buttons {
+          display: flex;
+          justify-content: center;
+          gap: 1rem;
+          margin-top: 2rem;
+        }
+
+        .host-header {
+          margin-bottom: 0;
+          padding-bottom: 4rem;
+        }
+
+        .hero-section {
+          margin-top: 0;
+        }
+
+        .become-host-page {
+          overflow-x: hidden;
+        }
+
+        .hero-section {
+          background: linear-gradient(rgba(0,0,0,0.5),black), 
+                      url('/images/hero-bg.jpg');
+          background-size: cover;
+          background-position: center;
+          height: 80vh;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          text-align: center;
+          color: white;
+          padding: 2rem;
+        }
+
+        .hero-content {
+          max-width: 800px;
+        }
+
+        .hero-content h1 {
+          font-size: 3rem;
+          margin-bottom: 1.5rem;
+          font-weight: bold;
+        }
+
+        .hero-content p {
+          font-size: 1.5rem;
+          margin-bottom: 2rem;
+        }
+
+        .features-section {
+          padding: 4rem 2rem;
+          max-width: 1200px;
+          margin: 0 auto;
+        }
+
+        .feature-card {
+          display: flex;
+          align-items: center;
+          gap: 2rem;
+          margin-bottom: 4rem;
+          padding: 2rem;
+          border-radius: 12px;
+          background: white;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .feature-card:nth-child(even) {
+          flex-direction: row-reverse;
+        }
+
+        .feature-card img {
+          width: 400px;
+          height: 300px;
+          object-fit: cover;
+          border-radius: 8px;
+        }
+
+        .feature-content {
+          flex: 1;
+        }
+
+        .feature-content h2 {
+          font-size: 2rem;
+          margin-bottom: 1rem;
+          color: #333;
+        }
+
+        .feature-content p {
+          font-size: 1.1rem;
+          color: #666;
+          line-height: 1.6;
+        }
+
+        @media (max-width: 768px) {
+          .feature-card {
+            flex-direction: column !important;
+          }
+
+          .feature-card img {
+            width: 100%;
+            height: 200px;
+          }
+
+          .hero-content h1 {
+            font-size: 2rem;
+          }
+        }
+      `}</style>
+    </div>
   );
 };
 

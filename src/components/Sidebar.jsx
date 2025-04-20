@@ -1,53 +1,78 @@
-import { Link, NavLink } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faTimes } from "@fortawesome/free-solid-svg-icons";
+import { faTimes, faHome, faSuitcase, faHeart, faUser, faSignInAlt, faUserPlus, faUsers, faHouseUser, faChevronLeft } from "@fortawesome/free-solid-svg-icons";
 import PropTypes from 'prop-types';
 
 const Sidebar = ({ isOpen, onClose }) => {
   const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+  const role = localStorage.getItem('role');
 
   return (
     <div className={`sidebar ${isOpen ? "active" : ""}`}>
       <div className="sidebar-header">
-        <button onClick={onClose}>
+        <button className="close-button" onClick={onClose}>
           <FontAwesomeIcon icon={faTimes} />
         </button>
       </div>
+      <button className="hide-sidebar-button" onClick={onClose}>
+        <FontAwesomeIcon icon={faChevronLeft} />
+      </button>
       <div className="sidebar-content">
-        <div className="sidebar-menu">
-          <NavLink to="/" exact="true" activeClassName="active" onClick={onClose}>
-            <i className="fas fa-home"></i> Home
-          </NavLink>
+        <ul className="sidebar-menu">
+          <li className="sidebar-item">
+            <Link to="/" onClick={onClose}>
+              <FontAwesomeIcon icon={faHome} /> Home
+            </Link>
+          </li>
           {isLoggedIn && (
-            <NavLink to="/trips" activeClassName="active" onClick={onClose}>
-              <i className="fas fa-suitcase"></i> Trips
-            </NavLink>
+            <>
+              <li className="sidebar-item">
+                <Link to="/trips" onClick={onClose}>
+                  <FontAwesomeIcon icon={faSuitcase} /> Trips
+                </Link>
+              </li>
+              <li className="sidebar-item">
+                <Link to="/wishlist" onClick={onClose}>
+                  <FontAwesomeIcon icon={faHeart} /> Wishlists
+                </Link>
+              </li>
+            </>
           )}
+          <hr className="divider" />
+          <li className="sidebar-item">
+            <Link to="/become-host" onClick={onClose}>
+              <FontAwesomeIcon icon={faHouseUser} /> Become a Host
+            </Link>
+          </li>
           {isLoggedIn && (
-            <NavLink to="/wishlist" activeClassName="active" onClick={onClose}>
-              <i className="fas fa-heart"></i> Wishlists
-            </NavLink>
+            <li className="sidebar-item">
+              <Link to="/account-settings" onClick={onClose}>
+                <FontAwesomeIcon icon={faUser} /> Account
+              </Link>
+            </li>
           )}
-          <hr />
-          <NavLink to="/become-host" activeClassName="active" onClick={onClose}>
-            <FontAwesomeIcon icon={["fas", "house-user"]} /> Become a Host
-          </NavLink>
-          {isLoggedIn && (
-            <NavLink to="/account-settings" activeClassName="active" onClick={onClose}>
-              <FontAwesomeIcon icon={["fas", "user"]} /> Account
-            </NavLink>
+          {isLoggedIn && role === 'admin' && (
+            <li className="sidebar-item">
+              <Link to="/manage-users" onClick={onClose}>
+                <FontAwesomeIcon icon={faUsers} /> Manage Users
+              </Link>
+            </li>
           )}
           {!isLoggedIn && (
             <>
-              <NavLink to="/login" activeClassName="active" onClick={onClose}>
-                <FontAwesomeIcon icon={["fas", "sign-in-alt"]} /> Login
-              </NavLink>
-              <NavLink to="/register" activeClassName="active" onClick={onClose}>
-                <FontAwesomeIcon icon={["fas", "user-plus"]} /> Register
-              </NavLink>
+              <li className="sidebar-item">
+                <Link to="/login" onClick={onClose}>
+                  <FontAwesomeIcon icon={faSignInAlt} /> Login
+                </Link>
+              </li>
+              <li className="sidebar-item">
+                <Link to="/register" onClick={onClose}>
+                  <FontAwesomeIcon icon={faUserPlus} /> Register
+                </Link>
+              </li>
             </>
           )}
-        </div>
+        </ul>
       </div>
     </div>
   );

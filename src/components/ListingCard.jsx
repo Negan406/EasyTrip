@@ -65,28 +65,45 @@ const ListingCard = ({ listing }) => {
         />
       )}
       <Link to={`/listing/${listing.id}`} className="listing-card">
-        <div className="listing-image">
-          <img  src={listing.photo} alt={listing.title} className="listing-image" />
-          <button 
-            className="favorite" 
-            onClick={handleFavoriteClick}
-          >
-            <FontAwesomeIcon icon={isFavorite ? faHeart : faRegularHeart} />
-          </button>
-        </div>
-        <div className="listing-info">
-          <div className="listing-title">
-            <h3>{listing.title}</h3>
-            <div style={{backgroundColor: "blue", color: "white",borderRadius: "20px",padding: "5px",fontSize: "13px"}} className="rating">
-              <i style={{color: "yellow"}} className="fas fa-star"></i>4.05 {listing.rating}
-            </div>
+        <div 
+          className="listing-card"
+          data-aos="fade-up"
+          data-aos-duration="600"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="listing-image">
+            <img  src={listing.mainPhoto || listing.photo} alt={listing.title} className="listing-image" />
+            <button 
+              className="favorite" 
+              onClick={handleFavoriteClick}
+            >
+              <FontAwesomeIcon icon={isFavorite ? faHeart : faRegularHeart} />
+            </button>
           </div>
-          <p className="listing-details">{listing.location}</p>
-          <p className="listing-dates">date{listing.dates}</p>
-          <p style={{color: "blue", fontSize: "16px"}} className="listing-price"><strong>${listing.price}</strong> night</p>
-          <p className="listing-description">{listing.description}</p>
+          <div className="listing-info">
+            <div className="listing-title">
+              <h3>{listing.title}</h3>
+              <div style={{backgroundColor: "white", color: "black",borderRadius: "20px",padding: "5px",fontSize: "15px"}} className="rating">
+                <p style={{color: "black"}} className="fas fa-star"></p>4.05 {listing.rating}
+              </div>
+            </div>
+            <p className="listing-details">{listing.location}</p>
+            <p className="listing-dates">date{listing.dates}</p>
+            <p style={{color: "black", fontSize: "16px"}} className="listing-price"><strong>${listing.price}</strong> night</p>
+            <p className="listing-description">{listing.description}</p>
+          </div>
         </div>
       </Link>
+      <style jsx>{`
+        .listing-card {
+          transition: all 0.3s ease;
+        }
+
+        .listing-card:hover {
+          transform: translateY(-10px);
+          box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+      `}</style>
     </>
   );
 };
@@ -97,7 +114,8 @@ ListingCard.propTypes = {
     title: PropTypes.string.isRequired,
     location: PropTypes.string.isRequired,
     price: PropTypes.number.isRequired,
-    photo: PropTypes.string.isRequired,
+    mainPhoto: PropTypes.string,
+    photo: PropTypes.string,
   }).isRequired,
 };
 
