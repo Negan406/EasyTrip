@@ -11,6 +11,7 @@ import im2 from "../pages/th.jpeg";
 import im3 from "../pages/ge.png";
 import im4 from "../pages/tr.webp";
 
+
 const BecomeHost = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -94,7 +95,7 @@ const BecomeHost = () => {
       {/* Original Host Header with Buttons */}
       <section className="host-header">
         <h1>Become a Host</h1>
-        <p>Publier votre logement sur Airbnb, c'est facile</p>
+        <p>Publier votre logement sur EasyTrip, c'est facile</p>
         <div className="header-buttons" data-aos="fade-up">
           <button 
             className="cta-button" 
@@ -248,6 +249,7 @@ const BecomeHost = () => {
           padding: 4rem 2rem;
           max-width: 1200px;
           margin: 0 auto;
+          
         }
 
         .feature-card {
@@ -257,8 +259,9 @@ const BecomeHost = () => {
           margin-bottom: 4rem;
           padding: 2rem;
           border-radius: 12px;
-          background: white;
+          background: linear-gradient(rgba(0,0,0,0.1),white );
           box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+          
         }
 
         .feature-card:nth-child(even) {
@@ -279,14 +282,15 @@ const BecomeHost = () => {
         .feature-content h2 {
           font-size: 2rem;
           margin-bottom: 1rem;
-          color: #333;
+          color: black;
         }
 
         .feature-content p {
           font-size: 1.1rem;
-          color: #666;
+          color: black;
           line-height: 1.6;
         }
+       
 
         @media (max-width: 768px) {
           .feature-card {
@@ -301,6 +305,7 @@ const BecomeHost = () => {
           .hero-content h1 {
             font-size: 2rem;
           }
+         
         }
       `}</style>
     </div>

@@ -17,12 +17,14 @@ import Payment from "./pages/Payment";
 import ManageBookings from "./pages/ManageBookings";
 import ManageUsers from './pages/ManageUsers'; // Import the ManageUsers page
 import PendingListings from "./pages/PendingListings"; // Add this import
+import Dashboard from './pages/Dashboard'; // Add this import
 import "./styles.css";
 import { useState, useEffect } from "react";
 import ErrorBoundary from "./components/ErrorBoundary";
 import ClearStorageButton from "./components/ClearStorageButton";
 import AOS from 'aos';
 import 'aos/dist/aos.css';
+
 
 const App = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -65,6 +67,7 @@ const App = () => {
         <Route path="/manage-bookings" element={<ManageBookings />} />
         <Route path="/manage-users" element={<ManageUsers />} /> {/* Add route for ManageUsers */}
         <Route path="/pending-listings" element={<PendingListings />} /> {/* Add this route */}
+        <Route path="/dashboard" element={<Dashboard />} /> {/* Add this route */}
       </Routes>
       <Footer />
     </Router>

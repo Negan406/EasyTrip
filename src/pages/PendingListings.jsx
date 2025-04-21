@@ -64,7 +64,7 @@ const PendingListings = () => {
   const handleReject = async (listing) => {
     setProcessing(listing.id);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000)); 
 
       const updatedPending = pendingListings.filter(item => item.id !== listing.id);
       localStorage.setItem('pendingListings', JSON.stringify(updatedPending));

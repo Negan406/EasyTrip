@@ -16,7 +16,14 @@ import {
   faCampground,
   faSnowflake,
   faSun, // Changed from faDesert
-  faAnchor // Replace faIsland with faAnchor
+  faAnchor, // Replace faIsland with faAnchor
+  faUsers,
+  faCalendarCheck,
+  faExclamationTriangle,
+  faChartLine,
+  faDollarSign,
+  faHouseUser,
+  faClipboardList
 } from "@fortawesome/free-solid-svg-icons";
 
 const Home = ({ searchTerm }) => {

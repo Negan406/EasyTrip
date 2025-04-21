@@ -1,5 +1,5 @@
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faGlobe, faBars, faUserCircle, faSearch, faHome, faSuitcase, faHeart, faUser, faSignInAlt, faUserPlus, faUsers, faHouseUser } from "@fortawesome/free-solid-svg-icons";
+import { faGlobe, faBars, faUserCircle, faSearch, faHome, faSuitcase, faHeart, faUser, faSignInAlt, faUserPlus, faUsers, faHouseUser, faChartLine } from "@fortawesome/free-solid-svg-icons";
 import { useLocation, useNavigate, Link } from "react-router-dom";
 import PropTypes from 'prop-types';
 import { useState, useRef, useEffect } from 'react';
@@ -118,6 +118,11 @@ const Header = ({ onSearch }) => {
                 </Link>
                 {isLoggedIn ? (
                   <>
+                    {role === 'admin' && (
+                      <Link to="/dashboard" className="dropdown-item">
+                        <FontAwesomeIcon icon={faChartLine} /> Dashboard
+                      </Link>
+                    )}
                     <Link to="/trips" className="dropdown-item">
                       <FontAwesomeIcon icon={faSuitcase} /> Trips
                     </Link>

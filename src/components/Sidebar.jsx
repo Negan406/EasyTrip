@@ -52,11 +52,13 @@ const Sidebar = ({ isOpen, onClose }) => {
             </li>
           )}
           {isLoggedIn && role === 'admin' && (
-            <li className="sidebar-item">
-              <Link to="/manage-users" onClick={onClose}>
-                <FontAwesomeIcon icon={faUsers} /> Manage Users
-              </Link>
-            </li>
+            <>
+              <li className="sidebar-item">
+                <Link to="/manage-users" onClick={onClose}>
+                  <FontAwesomeIcon icon={faUsers} /> Manage Users
+                </Link>
+              </li>
+            </>
           )}
           {!isLoggedIn && (
             <>

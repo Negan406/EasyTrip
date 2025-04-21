@@ -12,17 +12,17 @@ const Trips = () => {
 
   useEffect(() => {
     try {
-      const storedTrips = JSON.parse(localStorage.getItem('trips')) || [];
+      const storedTrips = JSON.parse(localStorage.getItem("trips")) || [];
       setTrips(storedTrips);
     } catch (error) {
       console.error("Failed to load trips:", error);
-      setNotification({ message: 'Failed to load trips.', type: 'error' });
+      setNotification({ message: "Failed to load trips.", type: "error" });
     }
   }, []);
 
   const handleDeleteTrip = (index) => {
-    if (trips[index].status === 'accepted') {
-      setNotification({ message: 'Cannot delete an accepted trip.', type: 'error' });
+    if (trips[index]?.status === "accepted") {
+      setNotification({ message: "Cannot delete an accepted trip.", type: "error" });
       return;
     }
     setTripToDelete(index);
@@ -32,8 +32,8 @@ const Trips = () => {
   const confirmDelete = () => {
     const updatedTrips = trips.filter((_, i) => i !== tripToDelete);
     setTrips(updatedTrips);
-    localStorage.setItem('trips', JSON.stringify(updatedTrips));
-    setNotification({ message: 'Trip deleted!', type: 'success' });
+    localStorage.setItem("trips", JSON.stringify(updatedTrips));
+    setNotification({ message: "Trip deleted!", type: "success" });
     setShowModal(false);
   };
 
@@ -60,7 +60,7 @@ const Trips = () => {
           />
         )}
         <h1>Your Trips</h1>
-       
+
         <div className="trips-list">
           {trips.length === 0 ? (
             <div className="no-trips-message">
@@ -70,22 +70,32 @@ const Trips = () => {
               <a href="/" className="cta-button">Start searching</a>
             </div>
           ) : (
-            trips.map((trip, index) => (
-              <div key={index} className="trip-item">
-                <img 
-                  src={trip.listing?.mainPhoto || trip.listing?.photo || '/default-trip-image.jpg'} 
-                  alt={trip.listing?.title || 'Trip Image'} 
-                  className="trip-image" 
-                />
-                <div className="trip-details">
-                  <h3>{trip.listing?.title || 'Unknown Title'}</h3>
-                  <p>{trip.listing?.location || 'Unknown Location'}</p>
-                  <p>From: {trip.startDate || 'N/A'} To: {trip.endDate || 'N/A'}</p>
-                  <p>Status: {trip.status || 'pending'}</p>
-                  <button onClick={() => handleDeleteTrip(index)} className="delete-trip-button">Delete</button>
+            trips.map((trip, index) => {
+              const { listing = {}, startDate, endDate, status } = trip;
+              const imageSrc = listing.mainPhoto || listing.photo || "/default-trip-image.jpg";
+              
+              return (
+                <div key={index} className="trip-item">
+                  <img
+                    src={imageSrc}
+                    alt={listing.title || "Trip Image"}
+                    className="trip-image"
+                  />
+                  <div className="trip-details">
+                    <h3>{listing.title || "Unknown Title"}</h3>
+                    <p>{listing.location || "Unknown Location"}</p>
+                    <p>From: {startDate || "N/A"} To: {endDate || "N/A"}</p>
+                    <p>Status: {status || "pending"}</p>
+                    <button
+                      onClick={() => handleDeleteTrip(index)}
+                      className="delete-trip-button"
+                    >
+                      Delete
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
       </main>

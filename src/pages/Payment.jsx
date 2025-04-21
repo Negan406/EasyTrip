@@ -37,7 +37,7 @@ const Payment = () => {
         title: listing.title,
         location: listing.location,
         price: listing.price,
-        photo: listing.photo
+        mainPhoto: listing.mainPhoto
       },
       startDate, 
       endDate, 

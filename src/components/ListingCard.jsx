@@ -34,7 +34,7 @@ const ListingCard = ({ listing }) => {
         title: listing.title,
         location: listing.location,
         price: listing.price,
-        photo: listing.photo
+        photo: listing.mainPhoto
       });
       setNotification({ message: 'Added to wishlist!', type: 'success' });
     } else {
