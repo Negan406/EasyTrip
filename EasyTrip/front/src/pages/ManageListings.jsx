@@ -217,7 +217,7 @@ const ManageListings = () => {
 
         .listings-grid {
           display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+          grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
           gap: 2rem;
           padding: 1rem;
         }
@@ -229,39 +229,146 @@ const ManageListings = () => {
           box-shadow: 0 2px 10px rgba(0,0,0,0.1);
           transition: all 0.3s ease;
           border: 1px solid rgba(0,0,0,0.1);
-          position: relative;
+          display: flex;
+          flex-direction: column;
+          height: 100%;
         }
 
         .listing-card:hover {
           transform: translateY(-5px);
-          box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+          box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+        }
+
+        .listing-content {
+          padding: 1.5rem;
+          flex-grow: 1;
+          display: flex;
+          flex-direction: column;
+        }
+
+        .listing-actions {
+          display: flex;
+          gap: 0.75rem;
+          margin-top: auto;
+          padding: 0.5rem 1rem 1rem;
+        }
+
+        .edit-button,
+        .delete-button {
+          flex: 1;
+          padding: 0.75rem 1rem;
+          border-radius: 8px;
+          cursor: pointer;
+          font-weight: 600;
+          font-size: 0.85rem;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          transition: all 0.2s ease;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.5rem;
+          position: relative;
+          overflow: hidden;
+        }
+
+        .edit-button {
+          background: linear-gradient(135deg, #007bff, #0056b3);
+          color: white;
+          border: none;
+        }
+
+        .edit-button:hover {
+          background: linear-gradient(135deg, #0056b3, #004085);
+          transform: translateY(-2px);
+          box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+        }
+
+        .edit-button:active {
+          transform: translateY(0);
+        }
+
+        .delete-button {
+          background: white;
+          color: #dc3545;
+          border: 2px solid #dc3545;
+        }
+
+        .delete-button:hover {
+          background: linear-gradient(135deg, #dc3545, #bd2130);
+          color: white;
+          transform: translateY(-2px);
+          box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
+          border-color: transparent;
+        }
+
+        .delete-button:active {
+          transform: translateY(0);
+        }
+
+        .edit-button::before,
+        .delete-button::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: -100%;
+          width: 100%;
+          height: 100%;
+          background: linear-gradient(
+            120deg,
+            transparent,
+            rgba(255, 255, 255, 0.2),
+            transparent
+          );
+          transition: 0.5s;
+        }
+
+        .edit-button:hover::before,
+        .delete-button:hover::before {
+          left: 100%;
+        }
+
+        .listings-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+          gap: 2rem;
+          padding: 1rem;
         }
 
         .listing-image {
-          height: 200px;
+          position: relative;
+          height: 220px;
           overflow: hidden;
+        }
+
+        .listing-image::after {
+          content: '';
+          position: absolute;
+          bottom: 0;
+          left: 0;
+          right: 0;
+          height: 40%;
+          background: linear-gradient(to top, rgba(0,0,0,0.3), transparent);
+          pointer-events: none;
         }
 
         .listing-image img {
           width: 100%;
           height: 100%;
           object-fit: cover;
-          transition: transform 0.3s ease;
+          transition: transform 0.5s ease;
         }
 
         .listing-card:hover .listing-image img {
-          transform: scale(1.05);
-        }
-
-        .listing-content {
-          padding: 1.5rem;
+          transform: scale(1.1);
         }
 
         .listing-content h3 {
-          margin: 0 0 0.5rem 0;
+          margin: 0 0 0.75rem 0;
           color: #2c3e50;
           font-size: 1.25rem;
           font-weight: 600;
+          line-height: 1.4;
         }
 
         .listing-location {
@@ -277,7 +384,7 @@ const ManageListings = () => {
           font-weight: 600;
           color: #2c3e50;
           margin: 0.75rem 0;
-          font-size: 1.1rem;
+          font-size: 1.2rem;
         }
 
         .listing-status {
@@ -314,136 +421,6 @@ const ManageListings = () => {
           box-shadow: 0 2px 4px rgba(220, 53, 69, 0.2);
         }
 
-        .listing-actions {
-          display: flex;
-          gap: 1rem;
-          margin-top: 1.5rem;
-          padding: 0 1rem;
-        }
-
-        .edit-button,
-        .delete-button {
-          flex: 1;
-          padding: 0.75rem 1.25rem;
-          border: none;
-          border-radius: 8px;
-          cursor: pointer;
-          font-weight: 600;
-          font-size: 0.9rem;
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-          transition: all 0.3s ease;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 0.5rem;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-
-        .edit-button {
-          background: #007bff;
-          color: white;
-          border: 2px solid #007bff;
-        }
-
-        .edit-button:hover {
-          background: #0056b3;
-          border-color: #0056b3;
-          transform: translateY(-2px);
-          box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-        }
-
-        .delete-button {
-          background: white;
-          color: #dc3545;
-          border: 2px solid #dc3545;
-        }
-
-        .delete-button:hover {
-          background: #dc3545;
-          color: white;
-          transform: translateY(-2px);
-          box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-        }
-
-        .modal-overlay {
-          position: fixed;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background: rgba(0,0,0,0.5);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          z-index: 1000;
-        }
-
-        .modal-content {
-          background: white;
-          padding: 2.5rem;
-          border-radius: 12px;
-          max-width: 400px;
-          width: 90%;
-          text-align: center;
-          box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-        }
-
-        .modal-content h3 {
-          color: #2c3e50;
-          margin-bottom: 1rem;
-          font-size: 1.5rem;
-        }
-
-        .modal-content p {
-          color: #666;
-          margin-bottom: 1.5rem;
-          line-height: 1.5;
-        }
-
-        .modal-buttons {
-          display: flex;
-          gap: 1rem;
-          margin-top: 2rem;
-        }
-
-        .cancel-button,
-        .confirm-button {
-          flex: 1;
-          padding: 0.75rem;
-          border: none;
-          border-radius: 8px;
-          cursor: pointer;
-          font-weight: 600;
-          font-size: 0.9rem;
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-          transition: all 0.3s ease;
-        }
-
-        .cancel-button {
-          background: #f8f9fa;
-          color: #495057;
-          border: 2px solid #e9ecef;
-        }
-
-        .cancel-button:hover {
-          background: #e9ecef;
-          transform: translateY(-2px);
-        }
-
-        .confirm-button {
-          background: #dc3545;
-          color: white;
-          border: 2px solid #dc3545;
-        }
-
-        .confirm-button:hover {
-          background: #c82333;
-          border-color: #bd2130;
-          transform: translateY(-2px);
-        }
-
         .no-results-message {
           text-align: center;
           margin-top: 3rem;
@@ -470,6 +447,21 @@ const ManageListings = () => {
 
           .listings-grid {
             grid-template-columns: 1fr;
+            padding: 0.5rem;
+          }
+
+          .listing-card {
+            max-width: 100%;
+          }
+
+          .listing-actions {
+            padding: 0.5rem 1rem 1rem;
+          }
+
+          .edit-button,
+          .delete-button {
+            padding: 0.65rem 0.75rem;
+            font-size: 0.8rem;
           }
         }
       `}</style>

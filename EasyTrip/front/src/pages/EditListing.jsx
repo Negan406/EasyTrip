@@ -8,7 +8,7 @@ const EditListing = () => {
   const { id } = useParams();
   const [listing, setListing] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [notification, setNotification] = useState(null);
+  const [error, setError] = useState(null);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -19,6 +19,14 @@ const EditListing = () => {
   const [mainPhoto, setMainPhoto] = useState(null);
   const [mainPhotoPreview, setMainPhotoPreview] = useState(null);
   const navigate = useNavigate();
+
+  const categories = [
+    { value: 'beach-houses', label: 'Beach Houses' },
+    { value: 'city-apartments', label: 'City Apartments' },
+    { value: 'mountain-cabins', label: 'Mountain Cabins' },
+    { value: 'luxury-villas', label: 'Luxury Villas' },
+    { value: 'pools', label: 'Pools' }
+  ];
 
   useEffect(() => {
     fetchListing();
@@ -44,11 +52,8 @@ const EditListing = () => {
         setMainPhotoPreview(`http://localhost:8000/storage/${listingData.main_photo}`);
       }
     } catch (error) {
-      setNotification({
-        type: 'error',
-        message: error.response?.data?.message || 'Failed to fetch listing'
-      });
-      navigate('/manage-listings');
+      setError(error.response?.data?.message || 'Failed to fetch listing');
+      setTimeout(() => navigate('/manage-listings'), 2000);
     } finally {
       setLoading(false);
     }
@@ -65,6 +70,10 @@ const EditListing = () => {
   const handleMainPhotoChange = (e) => {
     const file = e.target.files[0];
     if (file) {
+      if (file.size > 5 * 1024 * 1024) { // 5MB limit
+        setError('Main photo must be less than 5MB');
+        return;
+      }
       setMainPhoto(file);
       setMainPhotoPreview(URL.createObjectURL(file));
     }
@@ -73,17 +82,16 @@ const EditListing = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setError(null);
 
     try {
       const token = localStorage.getItem('authToken');
       const updateData = new FormData();
 
-      // Append form data
       Object.keys(formData).forEach(key => {
         updateData.append(key, formData[key]);
       });
 
-      // Append main photo if changed
       if (mainPhoto) {
         updateData.append('main_photo', mainPhoto);
       }
@@ -100,17 +108,10 @@ const EditListing = () => {
       );
 
       if (response.data.success) {
-        setNotification({
-          type: 'success',
-          message: 'Listing updated successfully'
-        });
-        setTimeout(() => navigate('/manage-listings'), 1500);
+        navigate('/manage-listings');
       }
     } catch (error) {
-      setNotification({
-        type: 'error',
-        message: error.response?.data?.message || 'Failed to update listing'
-      });
+      setError(error.response?.data?.message || 'Failed to update listing');
       setLoading(false);
     }
   };
@@ -124,91 +125,71 @@ const EditListing = () => {
       <div className="edit-listing-container">
         <h1>Edit Listing</h1>
         
-        {notification && (
-          <div className={`notification ${notification.type}`}>
-            {notification.message}
+        {error && (
+          <div className="error-message">
+            {error}
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="listing-form">
           <div className="form-grid">
             <div className="form-left">
-              <div className="form-group">
-                <label htmlFor="title">Title</label>
-                <input
-                  type="text"
-                  id="title"
-                  name="title"
-                  value={formData.title}
-                  onChange={handleInputChange}
-                  required
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="location">Location</label>
-                <input
-                  type="text"
-                  id="location"
-                  name="location"
-                  value={formData.location}
-                  onChange={handleInputChange}
-                  required
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="price">Price per night</label>
-                <input
-                  type="number"
-                  id="price"
-                  name="price"
-                  value={formData.price}
-                  onChange={handleInputChange}
-                  required
-                  min="0"
-                  step="0.01"
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="category">Category</label>
-                <select
-                  id="category"
-                  name="category"
-                  value={formData.category}
-                  onChange={handleInputChange}
-                  required
-                >
-                  <option value="">Select a category</option>
-                  <option value="beach-houses">Beach Houses</option>
-                  <option value="city-apartments">City Apartments</option>
-                  <option value="mountain-cabins">Mountain Cabins</option>
-                  <option value="luxury-villas">Luxury Villas</option>
-                  <option value="pools">Pools</option>
-                </select>
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="description">Description</label>
-                <textarea
-                  id="description"
-                  name="description"
-                  value={formData.description}
-                  onChange={handleInputChange}
-                  required
-                  rows="6"
-                />
-              </div>
+              <input 
+                type="text" 
+                name="title" 
+                placeholder="Title" 
+                value={formData.title} 
+                onChange={handleInputChange} 
+                required 
+              />
+              <input 
+                type="text" 
+                name="location" 
+                placeholder="Location" 
+                value={formData.location} 
+                onChange={handleInputChange} 
+                required 
+              />
+              <input 
+                type="number" 
+                name="price" 
+                placeholder="Price per night" 
+                value={formData.price} 
+                onChange={handleInputChange} 
+                required 
+                min="0"
+                step="0.01"
+              />
+              <select 
+                name="category" 
+                value={formData.category} 
+                onChange={handleInputChange} 
+                required
+              >
+                {categories.map(category => (
+                  <option key={category.value} value={category.value}>
+                    {category.label}
+                  </option>
+                ))}
+              </select>
+              <textarea 
+                name="description" 
+                placeholder="Description" 
+                value={formData.description} 
+                onChange={handleInputChange} 
+                required 
+                rows="6"
+              />
             </div>
-
+            
             <div className="form-right">
               <div className="photo-upload-section">
                 <div className="main-photo-upload">
                   <h3>Main Photo</h3>
-                  <input
-                    type="file"
-                    accept="image/*"
+                  <p className="photo-hint">Max size: 5MB</p>
+                  <input 
+                    type="file" 
+                    accept="image/jpeg,image/png,image/jpg" 
                     onChange={handleMainPhotoChange}
                     className="file-input"
                   />
@@ -217,6 +198,10 @@ const EditListing = () => {
                       src={mainPhotoPreview}
                       alt="Main preview"
                       className="main-preview"
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = 'https://via.placeholder.com/300x200?text=No+Image';
+                      }}
                     />
                   )}
                 </div>
@@ -224,7 +209,7 @@ const EditListing = () => {
             </div>
           </div>
 
-          <button type="submit" className="submit-button" disabled={loading}>
+          <button type="submit" className="cta-button" disabled={loading}>
             {loading ? <LoadingSpinner size="small" /> : 'Save Changes'}
           </button>
         </form>
@@ -239,75 +224,76 @@ const EditListing = () => {
 
         .edit-listing-container {
           flex: 1;
-          padding: 2rem;
-          margin-left: 250px;
           max-width: 1200px;
           margin: 2rem auto 2rem 250px;
+          padding: 2rem;
+          background: white;
+          border-radius: 12px;
+          box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
         }
 
         h1 {
           text-align: center;
           color: #2c3e50;
           margin-bottom: 2rem;
+          font-size: 2rem;
         }
 
-        .notification {
+        .error-message {
+          background-color: #f8d7da;
+          color: #721c24;
           padding: 1rem;
-          border-radius: 8px;
           margin-bottom: 1rem;
+          border-radius: 8px;
           text-align: center;
-          color: white;
-        }
-
-        .notification.success {
-          background: #28a745;
-        }
-
-        .notification.error {
-          background: #dc3545;
         }
 
         .form-grid {
           display: grid;
-          grid-template-columns: 3fr 2fr;
+          grid-template-columns: 1fr 1fr;
           gap: 2rem;
           margin-bottom: 2rem;
         }
 
-        .form-group {
-          margin-bottom: 1.5rem;
-        }
-
-        .form-group label {
-          display: block;
-          margin-bottom: 0.5rem;
-          color: #2c3e50;
-          font-weight: 500;
-        }
-
-        .form-group input,
-        .form-group select,
-        .form-group textarea {
+        .listing-form input,
+        .listing-form textarea,
+        .listing-form select {
           width: 100%;
-          padding: 0.75rem;
+          padding: 12px;
+          margin-bottom: 1rem;
           border: 1px solid #ddd;
           border-radius: 8px;
-          font-size: 1rem;
+          font-size: 16px;
           transition: border-color 0.3s ease;
         }
 
-        .form-group input:focus,
-        .form-group select:focus,
-        .form-group textarea:focus {
+        .listing-form input:focus,
+        .listing-form textarea:focus,
+        .listing-form select:focus {
           outline: none;
           border-color: #007bff;
+          box-shadow: 0 0 0 3px rgba(0,123,255,0.1);
+        }
+
+        .listing-form textarea {
+          height: 150px;
+          resize: vertical;
         }
 
         .photo-upload-section {
-          background: white;
+          background: #f9f9f9;
           padding: 1.5rem;
-          border-radius: 12px;
-          box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+          border-radius: 8px;
+        }
+
+        .photo-hint {
+          font-size: 0.9rem;
+          color: #666;
+          margin-bottom: 0.5rem;
+        }
+
+        .main-photo-upload {
+          margin-bottom: 1.5rem;
         }
 
         .main-photo-upload h3 {
@@ -325,41 +311,54 @@ const EditListing = () => {
           object-fit: cover;
           border-radius: 8px;
           margin-top: 1rem;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
 
-        .submit-button {
+        .cta-button {
           width: 100%;
           padding: 1rem;
-          background: #007bff;
+          background: linear-gradient(135deg, #007bff, #0056b3);
           color: white;
           border: none;
           border-radius: 8px;
           font-size: 1.1rem;
+          font-weight: 600;
           cursor: pointer;
-          transition: background 0.3s ease;
+          transition: all 0.3s ease;
           display: flex;
           align-items: center;
           justify-content: center;
           gap: 0.5rem;
         }
 
-        .submit-button:hover:not(:disabled) {
-          background: #0056b3;
+        .cta-button:hover:not(:disabled) {
+          background: linear-gradient(135deg, #0056b3, #004085);
+          transform: translateY(-2px);
+          box-shadow: 0 4px 12px rgba(0,123,255,0.2);
         }
 
-        .submit-button:disabled {
+        .cta-button:active:not(:disabled) {
+          transform: translateY(0);
+        }
+
+        .cta-button:disabled {
           background: #ccc;
           cursor: not-allowed;
+          transform: none;
         }
 
         @media (max-width: 768px) {
           .edit-listing-container {
-            margin-left: 0;
+            margin: 1rem;
             padding: 1rem;
           }
 
           .form-grid {
             grid-template-columns: 1fr;
+          }
+
+          h1 {
+            font-size: 1.75rem;
           }
         }
       `}</style>
