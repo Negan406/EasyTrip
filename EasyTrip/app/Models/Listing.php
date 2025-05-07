@@ -22,7 +22,7 @@ class Listing extends Model
         'price',
         'category',
         'main_photo',
-        'status',
+        'status'
     ];
 
     /**
@@ -31,12 +31,24 @@ class Listing extends Model
      * @var array<string, string>
      */
     protected $casts = [
-        'price' => 'decimal:2',
-        'status' => 'string'
+        'price' => 'float',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime'
     ];
 
     /**
-     * Get the host of the listing.
+     * The possible status values for a listing.
+     *
+     * @var array<string>
+     */
+    public static $statuses = [
+        'pending',
+        'approved',
+        'rejected'
+    ];
+
+    /**
+     * Get the host that owns the listing.
      */
     public function host()
     {

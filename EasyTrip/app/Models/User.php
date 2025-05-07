@@ -21,11 +21,11 @@ class User extends Authenticatable
         'email',
         'password',
         'phone',
-        'role',
         'profile_photo',
+        'role',
         'bio',
         'address',
-        'is_verified',
+        'is_verified'
     ];
 
     /**
@@ -47,7 +47,6 @@ class User extends Authenticatable
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
         'is_verified' => 'boolean',
-        'role' => 'string'
     ];
 
     /**

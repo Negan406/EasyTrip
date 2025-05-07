@@ -1,28 +1,47 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import LoadingSpinner from '../components/LoadingSpinner';
 import Notification from '../components/Notification';
+import ListingCard from '../components/ListingCard';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faCheck, faTimes } from '@fortawesome/free-solid-svg-icons';
+import axios from 'axios';
 
 const PendingListings = () => {
   const [pendingListings, setPendingListings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [notification, setNotification] = useState(null);
   const [processing, setProcessing] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
+    const role = localStorage.getItem('role');
+    if (role !== 'admin') {
+      navigate('/');
+      return;
+    }
     fetchPendingListings();
-  }, []);
+  }, [navigate]);
 
-  const fetchPendingListings = () => {
+  const fetchPendingListings = async () => {
     try {
-      const stored = JSON.parse(localStorage.getItem('pendingListings')) || [];
-      setPendingListings(stored);
-      setLoading(false);
+      const token = localStorage.getItem('authToken');
+      const response = await axios.get('http://localhost:8000/api/listings/pending', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (response.data.success) {
+        setPendingListings(response.data.listings || []);
+      } else {
+        throw new Error(response.data.message);
+      }
     } catch (error) {
       console.error('Error fetching pending listings:', error);
       setNotification({
         type: 'error',
-        message: 'Failed to load pending listings'
+        message: error.response?.data?.message || 'Failed to load pending listings'
       });
+    } finally {
       setLoading(false);
     }
   };
@@ -30,31 +49,24 @@ const PendingListings = () => {
   const handleApprove = async (listing) => {
     setProcessing(listing.id);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
-
-      // Remove from pending listings
-      const updatedPending = pendingListings.filter(item => item.id !== listing.id);
-      localStorage.setItem('pendingListings', JSON.stringify(updatedPending));
-      setPendingListings(updatedPending);
-
-      // Add to approved listings
-      const approvedListings = JSON.parse(localStorage.getItem('listings')) || [];
-      const approvedListing = { 
-        ...listing, 
-        status: 'approved',
-        approvedDate: new Date().toISOString()
-      };
-      approvedListings.push(approvedListing);
-      localStorage.setItem('listings', JSON.stringify(approvedListings));
-
-      setNotification({
-        type: 'success',
-        message: `Listing "${listing.title}" has been approved`
+      const token = localStorage.getItem('authToken');
+      const response = await axios.post(`http://localhost:8000/api/listings/${listing.id}/approve`, {}, {
+        headers: { 'Authorization': `Bearer ${token}` }
       });
+
+      if (response.data.success) {
+        setPendingListings(current => current.filter(item => item.id !== listing.id));
+        setNotification({
+          type: 'success',
+          message: `"${listing.title}" has been approved successfully`
+        });
+      } else {
+        throw new Error(response.data.message);
+      }
     } catch (error) {
       setNotification({
         type: 'error',
-        message: 'Failed to approve listing'
+        message: error.response?.data?.message || 'Failed to approve listing'
       });
     } finally {
       setProcessing(null);
@@ -64,20 +76,24 @@ const PendingListings = () => {
   const handleReject = async (listing) => {
     setProcessing(listing.id);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000)); 
-
-      const updatedPending = pendingListings.filter(item => item.id !== listing.id);
-      localStorage.setItem('pendingListings', JSON.stringify(updatedPending));
-      setPendingListings(updatedPending);
-
-      setNotification({
-        type: 'info',
-        message: `Listing "${listing.title}" has been rejected`
+      const token = localStorage.getItem('authToken');
+      const response = await axios.post(`http://localhost:8000/api/listings/${listing.id}/reject`, {}, {
+        headers: { 'Authorization': `Bearer ${token}` }
       });
+
+      if (response.data.success) {
+        setPendingListings(current => current.filter(item => item.id !== listing.id));
+        setNotification({
+          type: 'info',
+          message: `"${listing.title}" has been rejected`
+        });
+      } else {
+        throw new Error(response.data.message);
+      }
     } catch (error) {
       setNotification({
         type: 'error',
-        message: 'Failed to reject listing'
+        message: error.response?.data?.message || 'Failed to reject listing'
       });
     } finally {
       setProcessing(null);
@@ -87,86 +103,203 @@ const PendingListings = () => {
   if (loading) return <LoadingSpinner />;
 
   return (
-    <div className="page-container">
-      <div className="content-wrap">
-        <div className="container-center">
-          <h1 className="page-title">Pending Listings</h1>
-          {notification && (
-            <Notification
-              type={notification.type}
-              message={notification.message}
-              onClose={() => setNotification(null)}
-            />
-          )}
-          {pendingListings.length === 0 ? (
-            <div className="no-results-message">No pending listings to review</div>
-          ) : (
-            <div className="pending-listings-grid">
-              {pendingListings.map(listing => (
-                <div key={listing.id} className="pending-listing-card">
-                  <img src={listing.mainPhoto || listing.photo} alt={listing.title} />
-                  <div className="pending-listing-info">
-                    <h3>{listing.title}</h3>
-                    <p><strong>Location:</strong> {listing.location}</p>
-                    <p><strong>Price:</strong> ${listing.price}</p>
-                    <p><strong>Category:</strong> {listing.category}</p>
-                    <p><strong>Host:</strong> {listing.hostEmail}</p>
-                    <p><strong>Description:</strong> {listing.description}</p>
-                    <p><strong>Submitted:</strong> {new Date(listing.id).toLocaleDateString()}</p>
-                  </div>
-                  <div className="pending-actions">
-                    <button 
-                      className={`approve-button ${processing === listing.id ? 'processing' : ''}`}
-                      onClick={() => handleApprove(listing)}
-                      disabled={processing !== null}
-                    >
-                      {processing === listing.id ? 'Approving...' : 'Approve'}
-                    </button>
-                    <button 
-                      className={`reject-button ${processing === listing.id ? 'processing' : ''}`}
-                      onClick={() => handleReject(listing)}
-                      disabled={processing !== null}
-                    >
-                      {processing === listing.id ? 'Rejecting...' : 'Reject'}
-                    </button>
-                  </div>
+    <div className="pending-page">
+      <main className="pending-container">
+        <h1 className="page-title">Pending Listings</h1>
+        {notification && (
+          <Notification
+            type={notification.type}
+            message={notification.message}
+            onClose={() => setNotification(null)}
+          />
+        )}
+        {pendingListings.length === 0 ? (
+          <div className="no-results-message">
+            <FontAwesomeIcon icon={faCheck} className="check-icon" />
+            <p>No pending listings to review</p>
+          </div>
+        ) : (
+          <div className="pending-grid">
+            {pendingListings.map(listing => (
+              <div key={listing.id} className="pending-item" data-aos="fade-up">
+                <ListingCard listing={listing} />
+                <div className="action-container">
+                  <button 
+                    className={`action-button approve ${processing === listing.id ? 'processing' : ''}`}
+                    onClick={() => handleApprove(listing)}
+                    disabled={processing !== null}
+                  >
+                    <FontAwesomeIcon icon={faCheck} />
+                    <span>Accept</span>
+                  </button>
+                  <button 
+                    className={`action-button reject ${processing === listing.id ? 'processing' : ''}`}
+                    onClick={() => handleReject(listing)}
+                    disabled={processing !== null}
+                  >
+                    <FontAwesomeIcon icon={faTimes} />
+                    <span>Reject</span>
+                  </button>
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-      <style jsx>{`
-        .page-container {
-          min-height: 100vh;
-          position: relative;
-          padding-bottom: 60px;
-        }
-        .content-wrap {
-          padding-bottom: 2.5rem;
-        }
-        .container-center {
+              </div>
+            ))}
+          </div>
+        )}
+      </main>
+
+      <style>{`
+        .pending-page {
+          padding: 2rem;
           max-width: 1200px;
           margin: 0 auto;
-          padding: 20px;
         }
+
         .page-title {
           text-align: center;
-          color: #2c3e50;
-          margin-bottom: 30px;
-          font-size: 2.5em;
+          margin-bottom: 2rem;
+          color: #222;
+          font-size: 2.5rem;
+          font-weight: 600;
         }
-        .pending-listings-grid {
+
+        .pending-grid {
           display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-          gap: 20px;
-          padding: 20px;
+          grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+          gap: 2rem;
+          padding: 1rem 0;
         }
+
+        .pending-item {
+          display: flex;
+          flex-direction: column;
+          transition: transform 0.3s ease;
+          background: white;
+          border-radius: 12px;
+          overflow: hidden;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .pending-item:hover {
+          transform: translateY(-5px);
+          box-shadow: 0 8px 16px rgba(0,0,0,0.12);
+        }
+
+        .action-container {
+          display: flex;
+          gap: 1rem;
+          padding: 1.25rem;
+          background: white;
+          border-top: 1px solid #eee;
+        }
+
+        .action-button {
+          flex: 1;
+          padding: 0.875rem;
+          border: none;
+          border-radius: 8px;
+          font-size: 1rem;
+          font-weight: 500;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.75rem;
+          transition: all 0.2s ease;
+          color: white;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+
+        .action-button.approve {
+          background: #28a745;
+        }
+
+        .action-button.reject {
+          background: #dc3545;
+        }
+
+        .action-button.approve:hover:not(:disabled) {
+          background: #218838;
+          transform: translateY(-2px);
+        }
+
+        .action-button.reject:hover:not(:disabled) {
+          background: #c82333;
+          transform: translateY(-2px);
+        }
+
+        .action-button:disabled {
+          opacity: 0.7;
+          cursor: not-allowed;
+          transform: none !important;
+        }
+
+        .action-button.processing {
+          position: relative;
+          padding-right: 2.5rem;
+        }
+
+        .action-button.processing::after {
+          content: '';
+          position: absolute;
+          right: 1rem;
+          width: 1.25rem;
+          height: 1.25rem;
+          border: 2px solid rgba(255,255,255,0.5);
+          border-right-color: transparent;
+          border-radius: 50%;
+          animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
+
         .no-results-message {
           text-align: center;
-          margin-top: 50px;
-          font-size: 1.2em;
+          padding: 4rem 2rem;
+          background: white;
+          border-radius: 12px;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+          margin: 2rem auto;
+          max-width: 500px;
+        }
+
+        .check-icon {
+          font-size: 3rem;
+          color: #28a745;
+          margin-bottom: 1.5rem;
+        }
+
+        .no-results-message p {
+          font-size: 1.25rem;
           color: #666;
+          margin: 0;
+        }
+
+        @media (max-width: 768px) {
+          .pending-page {
+            padding: 1rem;
+          }
+
+          .page-title {
+            font-size: 2rem;
+            margin-bottom: 1.5rem;
+          }
+
+          .pending-grid {
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+          }
+
+          .action-container {
+            padding: 1rem;
+          }
+
+          .action-button {
+            padding: 0.75rem;
+            font-size: 0.9rem;
+          }
         }
       `}</style>
     </div>

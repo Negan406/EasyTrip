@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from 'react-router-dom';
 import ListingCard from "../components/ListingCard";
-import { storeData } from "../store";
 import LoadingSpinner from "../components/LoadingSpinner";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import PropTypes from 'prop-types';
 import { 
   faGlobe, 
   faUmbrellaBeach, 
@@ -15,16 +15,31 @@ import {
   faFire,
   faCampground,
   faSnowflake,
-  faSun, // Changed from faDesert
-  faAnchor, // Replace faIsland with faAnchor
-  faUsers,
-  faCalendarCheck,
-  faExclamationTriangle,
-  faChartLine,
-  faDollarSign,
-  faHouseUser,
-  faClipboardList
+  faSun,
+  faAnchor
 } from "@fortawesome/free-solid-svg-icons";
+import axios from "axios";
+
+// Configure token-based authentication
+const token = localStorage.getItem('authToken');
+if (token) {
+  axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+}
+
+const categories = [
+  { id: "all", name: "All", icon: faGlobe },
+  { id: "beach-houses", name: "Beach Houses", icon: faUmbrellaBeach },
+  { id: "city-apartments", name: "City Apartments", icon: faCity },
+  { id: "mountain-cabins", name: "Mountain Cabins", icon: faMountain },
+  { id: "forest-lodges", name: "Forest Lodges", icon: faTree },
+  { id: "Pools", name: "Pools", icon: faWater },
+  { id: "luxury-villas", name: "Luxury Villas", icon: faHouseChimney },
+  { id: "trending", name: "Trending", icon: faFire },
+  { id: "camping", name: "Camping", icon: faCampground },
+  { id: "arctic", name: "Arctic", icon: faSnowflake },
+  { id: "desert", name: "Desert", icon: faSun },
+  { id: "islands", name: "Islands", icon: faAnchor }
+];
 
 const Home = ({ searchTerm }) => {
   const [listings, setListings] = useState([]);
@@ -32,35 +47,54 @@ const Home = ({ searchTerm }) => {
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [loading, setLoading] = useState(true);
   const [categoryLoading, setCategoryLoading] = useState(false);
-  const [users, setUsers] = useState([]); // State to manage users
-  const role = localStorage.getItem('role'); // Get role from localStorage
+  const [users, setUsers] = useState([]);
+  const role = localStorage.getItem('role');
   const navigate = useNavigate();
   const [deleteConfirmation, setDeleteConfirmation] = useState(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [notification, setNotification] = useState(null);
   const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
   const [showSuccessMsg, setShowSuccessMsg] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const [clickedListingId, setClickedListingId] = useState(null);
 
-  const navigateToUserManagement = () => {
-    navigate('/manage-users'); // Navigate to the user management page
-  };
-
-  const navigateToOtherPage = () => {
-    navigate('/other-page'); // Navigate to the other page
-  };
-
+  // Fetch listings from API
   useEffect(() => {
-    const fetchListings = () => {
+    const fetchListings = async () => {
       setLoading(true);
-      const storedListings = JSON.parse(localStorage.getItem('listings')) || [];
-      // Only show approved listings and ensure they have either mainPhoto or photo
-      const approvedListings = storedListings.filter(listing => 
-        (listing.status === 'approved' || !listing.status) && 
-        (listing.mainPhoto || listing.photo)
-      );
-      setListings(approvedListings);
-      setFilteredListings(approvedListings);
-      setLoading(false);
+      try {
+        const response = await axios.get('http://localhost:8000/api/listings');
+        console.log('API Response:', response.data);
+        
+        if (response.data.success && Array.isArray(response.data.data)) {
+          const formattedListings = response.data.data.map(listing => ({
+            id: listing.id,
+            title: listing.title,
+            location: listing.location,
+            price: parseFloat(listing.price),
+            main_photo: listing.main_photo,
+            description: listing.description,
+            category: listing.category,
+            status: listing.status,
+            wishlist_id: listing.wishlist_id,
+            host: listing.host
+          }));
+
+          setListings(formattedListings);
+          setFilteredListings(formattedListings);
+        } else {
+          console.error("Invalid response format:", response.data);
+          setListings([]);
+          setFilteredListings([]);
+        }
+      } catch (error) {
+        console.error("Error fetching listings:", error);
+        setListings([]);
+        setFilteredListings([]);
+      } finally {
+        setLoading(false);
+      }
     };
 
     fetchListings();
@@ -73,17 +107,30 @@ const Home = ({ searchTerm }) => {
     }
   }, [role]);
 
+  // Update the filter logic
   useEffect(() => {
-    const filtered = listings.filter(listing =>
-      listing.location.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    let filtered = [...listings];
+    
+    // Apply search filter
+    if (searchTerm) {
+      filtered = filtered.filter(listing =>
+        listing.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        listing.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        listing.description.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+    
+    // Apply category filter
+    if (selectedCategory !== "all") {
+      filtered = filtered.filter(listing => listing.category === selectedCategory);
+    }
+    
     setFilteredListings(filtered);
-  }, [searchTerm, listings]);
+  }, [searchTerm, listings, selectedCategory]);
 
   const handleFilterClick = (category) => {
     setCategoryLoading(true);
     setSelectedCategory(category);
-    // Simulate a small delay to show the loading spinner
     setTimeout(() => {
       setCategoryLoading(false);
     }, 500);
@@ -95,16 +142,8 @@ const Home = ({ searchTerm }) => {
     localStorage.setItem('users', JSON.stringify(updatedUsers));
   };
 
-  const handleDeleteListing = (listingId) => {
-    const updatedListings = listings.filter(listing => listing.id !== listingId);
-    setListings(updatedListings);
-    setFilteredListings(updatedListings);
-    localStorage.setItem('listings', JSON.stringify(updatedListings));
-  };
-
   const handleDeleteClick = (listingId) => {
     if (!isLoggedIn || role !== 'admin') {
-      alert('You must be logged in as an admin to delete listings');
       navigate('/login');
       return;
     }
@@ -114,17 +153,45 @@ const Home = ({ searchTerm }) => {
   const handleConfirmDelete = async (listingId) => {
     setDeleteLoading(true);
     try {
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const token = localStorage.getItem('authToken');
+      const role = localStorage.getItem('role');
       
-      const updatedListings = listings.filter(listing => listing.id !== listingId);
-      setListings(updatedListings);
-      setFilteredListings(updatedListings);
-      localStorage.setItem('listings', JSON.stringify(updatedListings));
-      setShowSuccessMsg(true);
-      setTimeout(() => setShowSuccessMsg(false), 3000);
+      if (!token || role !== 'admin') {
+        setShowSuccessMsg(false);
+        setNotification({
+          type: 'error',
+          message: 'You must be an admin to delete listings'
+        });
+        return;
+      }
+
+      const response = await axios.delete(`http://localhost:8000/api/listings/${listingId}`, {
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        }
+      });
+
+      if (response.status === 200 || response.status === 204) {
+        // Remove the deleted listing from both listings and filteredListings
+        const updatedListings = listings.filter(listing => listing.id !== listingId);
+        const updatedFilteredListings = filteredListings.filter(listing => listing.id !== listingId);
+        
+        setListings(updatedListings);
+        setFilteredListings(updatedFilteredListings);
+        
+        setShowSuccessMsg(true);
+        setTimeout(() => setShowSuccessMsg(false), 3000);
+      } else {
+        throw new Error('Failed to delete listing');
+      }
     } catch (error) {
       console.error('Error deleting listing:', error);
+      setNotification({
+        type: 'error',
+        message: error.response?.data?.message || 'Failed to delete listing. Please try again.'
+      });
     } finally {
       setDeleteLoading(false);
       setDeleteConfirmation(null);
@@ -137,33 +204,20 @@ const Home = ({ searchTerm }) => {
 
   const handleListingClick = (listingId) => {
     setClickedListingId(listingId);
-    // Simulate loading time before navigation
     setTimeout(() => {
       navigate(`/listing/${listingId}`);
     }, 500);
   };
 
-  const categoryFilteredListings = filteredListings.filter(
-    listing => selectedCategory === "all" || listing.category === selectedCategory
-  );
-
-  const categoryIcons = {
-    "all": faGlobe,
-    "beach-houses": faUmbrellaBeach,
-    "city-apartments": faCity,
-    "mountain-cabins": faMountain,
-    "forest-lodges": faTree,
-    "lakefront-properties": faWater,
-    "luxury-villas": faHouseChimney,
-    "trending": faFire,
-    "camping": faCampground,
-    "arctic": faSnowflake,
-    "desert": faSun, // Changed from faDesert
-    "islands": faAnchor // Replace faIsland with faAnchor
+  // Add load more functionality
+  const loadMore = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage(prev => prev + 1);
+    }
   };
 
   return (
-    <main>
+    <div className="home-container">
       {loading ? (
         <LoadingSpinner />
       ) : (
@@ -173,77 +227,71 @@ const Home = ({ searchTerm }) => {
               Listing deleted successfully!
             </div>
           )}
-          {role === 'admin' && (
-            <div className="admin-panel">
-              <ul>
-                {users.map(user => (
-                  <li key={user.id}>
-                    {user.email}
-                    <button className="delete-button" onClick={() => handleDeleteUser(user.id)}>Delete</button>
-                  </li>
-                ))}
-              </ul>
+          
+          {notification && (
+            <div className={`notification ${notification.type}`}>
+              {notification.message}
+              <button className="close-btn" onClick={() => setNotification(null)}>×</button>
             </div>
           )}
-          <div className="filters" data-aos="fade-down">
-            <button
-              className={`filter-button ${selectedCategory === "all" ? "active" : ""}`}
-              onClick={() => handleFilterClick("all")}
-            >
-              <FontAwesomeIcon icon={categoryIcons["all"]} /> All
-            </button>
-            {storeData.categories.map((category) => (
-              <button
-                key={category}
-                className={`filter-button ${selectedCategory === category ? "active" : ""}`}
-                onClick={() => handleFilterClick(category)}
-              >
-                <FontAwesomeIcon icon={categoryIcons[category] || faGlobe} />
-                {" "}
-                {category.split("-").map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(" ")}
-              </button>
-            ))}
+
+          <div className="filters-container">
+            <div className="filters" data-aos="fade-down">
+              {categories.map((category) => (
+                <button
+                  key={category.id}
+                  className={`filter-button ${selectedCategory === category.id ? "active" : ""}`}
+                  onClick={() => handleFilterClick(category.id)}
+                >
+                  <FontAwesomeIcon icon={category.icon} />
+                  <span>{category.name}</span>
+                </button>
+              ))}
+            </div>
           </div>
-          <div className="listings">
+
+          <div className="listings-container">
             {categoryLoading ? (
               <LoadingSpinner />
-            ) : categoryFilteredListings.length === 0 ? (
+            ) : filteredListings.length === 0 ? (
               <div className="no-results" data-aos="fade-up">
-                <p>There is no list that contains this category.</p>
+                <p>No listings found for this category.</p>
               </div>
             ) : (
-              categoryFilteredListings.map((listing, index) => (
-                <div 
-                  key={listing.id} 
-                  data-aos="fade-up"
-                  data-aos-delay={index * 100}
-                  className={`listing-wrapper ${clickedListingId === listing.id ? 'loading' : ''}`}
-                  onClick={() => handleListingClick(listing.id)}
-                >
-                  <ListingCard listing={listing} />
-                  {isLoggedIn && role === 'admin' && (
-                    <button 
-                      className={`delete-button ${deleteLoading && deleteConfirmation === listing.id ? 'delete-loading' : ''}`}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDeleteClick(listing.id);
-                      }}
-                      disabled={deleteLoading}
-                    >
-                      Delete
-                    </button>
-                  )}
-                </div>
-              ))
+              <div className="listings">
+                {filteredListings.map((listing, index) => (
+                  <div 
+                    key={listing.id} 
+                    data-aos="fade-up"
+                    data-aos-delay={index * 100}
+                    className={`listing-wrapper ${clickedListingId === listing.id ? 'loading' : ''}`}
+                  >
+                    <ListingCard listing={listing} />
+                    {isLoggedIn && role === 'admin' && (
+                      <button 
+                        className="delete-button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteClick(listing.id);
+                        }}
+                        disabled={deleteLoading}
+                      >
+                        <FontAwesomeIcon icon="trash" className="delete-icon" />
+                        <span>Delete</span>
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
             )}
           </div>
 
           {deleteConfirmation && (
             <>
-              <div className="modal-overlay" />
+              <div className="modal-overlay" onClick={handleCancelDelete}></div>
               <div className="delete-confirmation-modal">
                 <h3>Confirm Deletion</h3>
-                <p>Are you sure you want to delete this listing?</p>
+                <p>Are you sure you want to delete this listing? This action cannot be undone.</p>
                 <div className="confirmation-buttons">
                   <button 
                     className="cancel-delete"
@@ -253,7 +301,7 @@ const Home = ({ searchTerm }) => {
                     Cancel
                   </button>
                   <button 
-                    className="confirm-delete"
+                    className={`confirm-delete ${deleteLoading ? 'loading' : ''}`}
                     onClick={() => handleConfirmDelete(deleteConfirmation)}
                     disabled={deleteLoading}
                   >
@@ -266,93 +314,291 @@ const Home = ({ searchTerm }) => {
         </>
       )}
 
-      <style jsx>{`
-        // ...existing styles...
-        
+      <style>{`
+        .home-container {
+          max-width: 1280px;
+          margin: 0 auto;
+          padding: 20px 40px;
+        }
+
+        .filters-container {
+          margin-bottom: 30px;
+          position: sticky;
+          top: 80px;
+          background: white;
+          z-index: 10;
+          padding: 15px 0;
+          border-bottom: 1px solid #f0f0f0;
+        }
+
+        .filters {
+          display: flex;
+          gap: 20px;
+          overflow-x: auto;
+          padding: 5px 0;
+          -webkit-overflow-scrolling: touch;
+          scrollbar-width: none;
+          margin: 0 -10px;
+          padding: 0 10px;
+        }
+
+        .filters::-webkit-scrollbar {
+          display: none;
+        }
+
         .filter-button {
           display: flex;
           align-items: center;
           gap: 8px;
-          padding: 8px 16px;
-          // ...rest of existing button styles...
+          padding: 12px 20px;
+          background: white;
+          border: 1px solid #ddd;
+          border-radius: 30px;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          white-space: nowrap;
+          color: #222;
+          font-size: 0.95rem;
+          min-width: fit-content;
         }
 
-        .filter-button svg {
-          width: 16px;
-          height: 16px;
+        .filter-button:hover {
+          border-color: #222;
+          transform: translateY(-1px);
+        }
+
+        .filter-button.active {
+          background: #222;
+          color: white;
+          border-color: #222;
+        }
+
+        .listings-container {
+          position: relative;
+          min-height: 200px;
         }
 
         .listings {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+          gap: 24px;
+          padding: 0;
+          animation: fadeIn 0.5s ease;
+        }
+
+        .listing-wrapper {
+          position: relative;
+          transition: all 0.3s ease;
+          border-radius: 12px;
+          overflow: hidden;
+        }
+
+        .listing-wrapper img {
+          transition: transform 0.3s ease;
+        }
+
+        .listing-wrapper:hover img {
+          transform: scale(1.05);
+        }
+
+        .listing-wrapper.loading {
+          opacity: 0.7;
+          transform: scale(0.98);
+        }
+
+        .no-results {
+          text-align: center;
+          padding: 60px 20px;
+          background: white;
+          border-radius: 12px;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+          margin: 40px auto;
+          max-width: 500px;
+          animation: fadeIn 0.5s ease;
+        }
+
+        .no-results p {
+          color: #717171;
+          font-size: 1.2rem;
+          margin: 0;
+        }
+
+        .delete-button {
+          position: absolute;
+          bottom: 20px;
+          right: 20px;
+          background: #ff385c;
+          color: white;
+          border: none;
+          padding: 8px 16px;
+          border-radius: 20px;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          font-size: 0.9rem;
+          z-index: 2;
+          opacity: 0;
+          transform: translateY(10px);
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+
+        .listing-wrapper:hover .delete-button {
           opacity: 1;
-          transition: opacity 0.3s ease-in-out;
+          transform: translateY(0);
         }
 
-        .listings > div {
-          transition: transform 0.3s ease-in-out;
+        .delete-button:hover:not(:disabled) {
+          background: #e31c5f;
+          transform: scale(1.05);
         }
 
-        .listings > div:hover {
-          transform: translateY(-5px);
+        .delete-button:disabled {
+          opacity: 0.7;
+          cursor: not-allowed;
+        }
+
+        .delete-icon {
+          font-size: 0.9rem;
         }
 
         .success-message {
-          background-color: #4CAF50;
-          color: white;
-          padding: 10px;
-          border-radius: 4px;
-          margin: 10px auto;
-          max-width: 300px;
-          text-align: center;
           position: fixed;
           top: 20px;
           left: 50%;
           transform: translateX(-50%);
+          background: #4CAF50;
+          color: white;
+          padding: 12px 24px;
+          border-radius: 8px;
           z-index: 1000;
+          animation: slideDown 0.3s ease;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         }
 
-        .listing-wrapper {
-          cursor: pointer;
-          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-          position: relative;
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+            transform: translateY(10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
         }
 
-        .listing-wrapper.loading::after {
-          content: '';
-          position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background: rgba(255, 255, 255, 0.8);
+        @keyframes slideDown {
+          from {
+            transform: translate(-50%, -100%);
+            opacity: 0;
+          }
+          to {
+            transform: translate(-50%, 0);
+            opacity: 1;
+          }
+        }
+
+        @media (max-width: 1024px) {
+          .home-container {
+            padding: 20px;
+          }
+
+          .listings {
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+          }
+        }
+
+        @media (max-width: 768px) {
+          .home-container {
+            padding: 15px;
+          }
+
+          .filters-container {
+            margin-bottom: 20px;
+            padding: 10px 0;
+          }
+
+          .filter-button {
+            padding: 10px 16px;
+            font-size: 0.9rem;
+          }
+
+          .listings {
+            grid-template-columns: 1fr;
+            gap: 15px;
+          }
+
+          .delete-button {
+            opacity: 1;
+            transform: translateY(0);
+            bottom: 15px;
+            right: 15px;
+            padding: 6px 12px;
+            font-size: 0.85rem;
+          }
+
+          .delete-confirmation-modal {
+            padding: 20px;
+          }
+        }
+
+        .notification {
+          position: fixed;
+          top: 20px;
+          right: 20px;
+          padding: 15px 20px;
+          border-radius: 8px;
+          color: white;
+          font-size: 0.95rem;
+          z-index: 1000;
           display: flex;
-          justify-content: center;
           align-items: center;
-          border-radius: 12px;
+          gap: 10px;
+          animation: slideIn 0.3s ease;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         }
 
-        .listing-wrapper.loading::before {
-          content: '';
-          position: absolute;
-          top: 50%;
-          left: 50%;
-          transform: translate(-50%, -50%);
-          width: 30px;
-          height: 30px;
-          border: 3px solid #f3f3f3;
-          border-top: 3px solid var(--primary-color);
-          border-radius: 50%;
-          z-index: 1;
-          animation: spin 1s linear infinite;
-          pointer-events: none;
+        .notification.error {
+          background: #dc3545;
         }
 
-        @keyframes spin {
-          0% { transform: translate(-50%, -50%) rotate(0deg); }
-          100% { transform: translate(-50%, -50%) rotate(360deg); }
+        .notification.success {
+          background: #28a745;
+        }
+
+        .close-btn {
+          background: none;
+          border: none;
+          color: white;
+          font-size: 1.2rem;
+          cursor: pointer;
+          padding: 0 5px;
+          margin-left: 10px;
+        }
+
+        .close-btn:hover {
+          opacity: 0.8;
+        }
+
+        @keyframes slideIn {
+          from {
+            transform: translateX(100%);
+            opacity: 0;
+          }
+          to {
+            transform: translateX(0);
+            opacity: 1;
+          }
         }
       `}</style>
-    </main>
+    </div>
   );
+};
+
+Home.propTypes = {
+  searchTerm: PropTypes.string
 };
 
 export default Home;

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faStar } from "@fortawesome/free-solid-svg-icons";
+import { faStar, faUser } from "@fortawesome/free-solid-svg-icons";
 
 const Comments = ({ listingId }) => {
   const [comments, setComments] = useState([]);
@@ -10,11 +10,14 @@ const Comments = ({ listingId }) => {
   const [canComment, setCanComment] = useState(false);
   const [hoveredStar, setHoveredStar] = useState(0);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userName, setUserName] = useState('');
 
   useEffect(() => {
-    // Check login status
+    // Check login status and get user name
     const loggedIn = localStorage.getItem('isLoggedIn') === 'true';
+    const name = localStorage.getItem('userName');
     setIsLoggedIn(loggedIn);
+    setUserName(name || '');
     
     // Load existing comments
     const allComments = JSON.parse(localStorage.getItem('comments')) || {};
@@ -22,7 +25,6 @@ const Comments = ({ listingId }) => {
 
     if (loggedIn) {
       // Check if user can comment (has completed payment)
-      const userEmail = localStorage.getItem('email');
       const trips = JSON.parse(localStorage.getItem('trips')) || [];
       const hasCompletedPayment = trips.some(trip => 
         trip.listing.id === parseInt(listingId) && 
@@ -38,12 +40,12 @@ const Comments = ({ listingId }) => {
     e.preventDefault();
     if (!newComment || rating === 0 || !isLoggedIn) return;
 
-    const userEmail = localStorage.getItem('email');
     const newCommentObj = {
       id: Date.now(),
       text: newComment,
       rating,
-      userEmail,
+      userName: userName,
+      userEmail: localStorage.getItem('userEmail'),
       date: new Date().toISOString()
     };
 
@@ -104,9 +106,12 @@ const Comments = ({ listingId }) => {
           <p className="no-comments">No reviews yet. Be the first to share your experience!</p>
         ) : (
           comments.map(comment => (
-            <div key={comment.id} className="comment">
+            <div key={comment.id} className="comment" data-aos="fade-up">
               <div className="comment-header">
-                <span className="user-email">{comment.userEmail}</span>
+                <div className="user-info">
+                  <FontAwesomeIcon icon={faUser} className="user-icon" />
+                  <span className="user-name">{comment.userName || 'Anonymous'}</span>
+                </div>
                 <div className="rating">
                   {[...Array(7)].map((_, index) => (
                     <FontAwesomeIcon
@@ -211,24 +216,56 @@ const Comments = ({ listingId }) => {
         }
 
         .comment {
-          padding: 1rem;
+          padding: 1.5rem;
           border: 1px solid #eee;
           border-radius: 8px;
+          background: #f8f9fa;
+          transition: transform 0.3s ease;
+        }
+
+        .comment:hover {
+          transform: translateY(-2px);
         }
 
         .comment-header {
           display: flex;
           justify-content: space-between;
-          margin-bottom: 0.5rem;
+          align-items: center;
+          margin-bottom: 1rem;
         }
 
-        .user-email {
+        .user-info {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+        }
+
+        .user-icon {
+          color: #666;
+          font-size: 1.2rem;
+        }
+
+        .user-name {
           font-weight: bold;
+          color: #333;
+        }
+
+        .rating {
+          display: flex;
+          gap: 0.25rem;
+        }
+
+        .comment-text {
+          color: #444;
+          line-height: 1.5;
+          margin: 0.5rem 0;
         }
 
         .comment-date {
+          display: block;
           font-size: 0.9rem;
           color: #666;
+          margin-top: 0.5rem;
         }
         `}
       </style>

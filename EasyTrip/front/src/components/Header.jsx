@@ -1,5 +1,5 @@
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faGlobe, faBars, faUserCircle, faSearch, faHome, faSuitcase, faHeart, faUser, faSignInAlt, faUserPlus, faUsers, faHouseUser, faChartLine } from "@fortawesome/free-solid-svg-icons";
+import { faGlobe, faBars, faUserCircle, faSearch, faHome, faSuitcase, faHeart, faUser, faSignInAlt, faUserPlus, faUsers, faHouseUser, faChartLine, faClipboardList } from "@fortawesome/free-solid-svg-icons";
 import { useLocation, useNavigate, Link } from "react-router-dom";
 import PropTypes from 'prop-types';
 import { useState, useRef, useEffect } from 'react';
@@ -67,6 +67,26 @@ const Header = ({ onSearch }) => {
     // You can add your filtering logic here
   };
 
+  const renderAdminLinks = () => {
+    if (role === 'admin') {
+      return (
+        <>
+          <Link to="/dashboard" className="dropdown-item admin-item">
+            <FontAwesomeIcon icon={faChartLine} /> Dashboard
+          </Link>
+          <Link to="/pending-listings" className="dropdown-item admin-item">
+            <FontAwesomeIcon icon={faClipboardList} /> Pending Listings
+          </Link>
+          <Link to="/manage-users" className="dropdown-item admin-item">
+            <FontAwesomeIcon icon={faUsers} /> Manage Users
+          </Link>
+          <div className="dropdown-divider"></div>
+        </>
+      );
+    }
+    return null;
+  };
+
   return (
     <header>
       <nav>
@@ -110,6 +130,7 @@ const Header = ({ onSearch }) => {
             <div className="profile-menu" onClick={() => setShowProfileMenu(!showProfileMenu)}>
               <FontAwesomeIcon icon={faBars} />
               <FontAwesomeIcon icon={faUserCircle} />
+              {role === 'admin' && <span className="admin-badge">Admin</span>}
             </div>
             {showProfileMenu && (
               <div className="profile-dropdown">
@@ -118,11 +139,7 @@ const Header = ({ onSearch }) => {
                 </Link>
                 {isLoggedIn ? (
                   <>
-                    {role === 'admin' && (
-                      <Link to="/dashboard" className="dropdown-item">
-                        <FontAwesomeIcon icon={faChartLine} /> Dashboard
-                      </Link>
-                    )}
+                    {renderAdminLinks()}
                     <Link to="/trips" className="dropdown-item">
                       <FontAwesomeIcon icon={faSuitcase} /> Trips
                     </Link>
@@ -136,12 +153,6 @@ const Header = ({ onSearch }) => {
                     <Link to="/account-settings" className="dropdown-item">
                       <FontAwesomeIcon icon={faUser} /> Account
                     </Link>
-                    {role === 'admin' && (
-                      <Link to="/manage-users" className="dropdown-item">
-                        <FontAwesomeIcon icon={faUsers} /> Manage Users
-                      </Link>
-                    )}
-                    
                     <button 
                       onClick={handleLogout} 
                       className="dropdown-item logout-item"
@@ -255,6 +266,32 @@ const Header = ({ onSearch }) => {
           opacity: 0.7;
           cursor: wait;
           background-color: #ffecec;
+        }
+
+        .admin-badge {
+          background: #dc3545;
+          color: white;
+          padding: 2px 6px;
+          border-radius: 12px;
+          font-size: 0.7rem;
+          margin-left: 5px;
+          font-weight: bold;
+        }
+
+        .admin-item {
+          background-color: #f8f9fa;
+          color: #dc3545;
+          font-weight: 500;
+        }
+
+        .admin-item:hover {
+          background-color: #dc3545;
+          color: white;
+        }
+
+        .profile-menu {
+          display: flex;
+          align-items: center;
         }
       `}</style>
     </header>

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { 
-  faUsers, faCalendarCheck, faExclamationTriangle,
+  faUsers, faExclamationTriangle,
   faDollarSign, faHouseUser, faClipboardList 
 } from "@fortawesome/free-solid-svg-icons";
 import Sidebar from "../components/Sidebar";
@@ -17,7 +17,10 @@ import {
   Legend,
   ArcElement,
 } from 'chart.js';
-import { Line, Bar, Doughnut } from 'react-chartjs-2';
+import { Doughnut } from 'react-chartjs-2';
+import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
+import LoadingSpinner from "../components/LoadingSpinner";
 
 // Register ChartJS components
 ChartJS.register(
@@ -33,62 +36,66 @@ ChartJS.register(
 );
 
 const Dashboard = () => {
-  const [dashboardStats, setDashboardStats] = useState({
+  const [stats, setStats] = useState({
     totalListings: 0,
-    registeredUsers: 0,
-    upcomingBookings: 0,
+    approvedListings: 0,
     pendingListings: 0,
-    reports: 0,
-    revenue: 0,
-    weeklyBookings: [],
-    userSignups: []
+    rejectedListings: 0,
+    registeredUsers: 0,
+    totalBookings: 0
   });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    // Fetch dashboard data
-    const fetchDashboardData = () => {
-      const listings = JSON.parse(localStorage.getItem('listings')) || [];
-      const users = JSON.parse(localStorage.getItem('users')) || [];
-      const trips = JSON.parse(localStorage.getItem('trips')) || [];
-      const pendingListings = JSON.parse(localStorage.getItem('pendingListings')) || [];
+    const role = localStorage.getItem('role');
+    if (role !== 'admin') {
+      navigate('/');
+      return;
+    }
+    fetchStats();
+  }, [navigate]);
 
-      // Generate mock data for weekly bookings
-      const weeklyBookings = [
-        { day: 'Mon', count: Math.floor(Math.random() * 20) },
-        { day: 'Tue', count: Math.floor(Math.random() * 20) },
-        { day: 'Wed', count: Math.floor(Math.random() * 20) },
-        { day: 'Thu', count: Math.floor(Math.random() * 20) },
-        { day: 'Fri', count: Math.floor(Math.random() * 20) },
-        { day: 'Sat', count: Math.floor(Math.random() * 20) },
-        { day: 'Sun', count: Math.floor(Math.random() * 20) }
-      ];
+  const fetchStats = async () => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('authToken');
+      const headers = { 'Authorization': `Bearer ${token}` };
 
-      // Generate mock data for user signups
-      const userSignups = [
-        { month: 'Jan', count: Math.floor(Math.random() * 100) },
-        { month: 'Feb', count: Math.floor(Math.random() * 100) },
-        { month: 'Mar', count: Math.floor(Math.random() * 100) },
-        { month: 'Apr', count: Math.floor(Math.random() * 100) },
-        { month: 'May', count: Math.floor(Math.random() * 100) }
-      ];
+      // Fetch all listings to get total and status counts
+      const listingsResponse = await axios.get('http://localhost:8000/api/listings', { headers });
+      const allListings = listingsResponse.data.data || [];
+      
+      // Fetch pending listings
+      const pendingResponse = await axios.get('http://localhost:8000/api/listings/pending', { headers });
+      const pendingListings = pendingResponse.data.listings || [];
 
-      setDashboardStats({
-        totalListings: listings.length,
-        registeredUsers: users.length,
-        upcomingBookings: trips.filter(trip => new Date(trip.startDate) > new Date()).length,
+      // Fetch all users
+      const usersResponse = await axios.get('http://localhost:8000/api/users', { headers });
+      const allUsers = usersResponse.data.users || [];
+
+      // Calculate listing statistics
+      const approvedListings = allListings.filter(listing => listing.status === 'approved');
+      const rejectedListings = allListings.filter(listing => listing.status === 'rejected');
+
+      setStats({
+        totalListings: allListings.length,
+        approvedListings: approvedListings.length,
         pendingListings: pendingListings.length,
-        reports: Math.floor(Math.random() * 10),
-        revenue: Math.floor(Math.random() * 50000),
-        weeklyBookings,
-        userSignups
+        rejectedListings: rejectedListings.length,
+        registeredUsers: allUsers.length,
+        totalBookings: 0 // This will be updated when bookings endpoint is available
       });
-    };
 
-    fetchDashboardData();
-    // Refresh data every 5 minutes
-    const interval = setInterval(fetchDashboardData, 300000);
-    return () => clearInterval(interval);
-  }, []);
+      setError(null);
+    } catch (err) {
+      console.error('Error fetching statistics:', err);
+      setError('Failed to load dashboard statistics. Please try again later.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const chartOptions = {
     responsive: true,
@@ -98,57 +105,36 @@ const Dashboard = () => {
       },
       title: {
         display: true,
-        text: 'Statistics',
+        text: 'Listing Statistics',
       },
     },
   };
 
-  const bookingsData = {
-    labels: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
+  const listingStatusData = {
+    labels: ['Approved', 'Pending', 'Rejected'],
     datasets: [
       {
-        label: 'Weekly Bookings',
-        data: dashboardStats.weeklyBookings.map(day => day.count),
-        backgroundColor: 'rgba(53, 162, 235, 0.5)',
-        borderColor: 'rgb(53, 162, 235)',
-        borderWidth: 2,
-      },
-    ],
-  };
-
-  const userSignupsData = {
-    labels: dashboardStats.userSignups.map(item => item.month),
-    datasets: [
-      {
-        label: 'User Signups',
-        data: dashboardStats.userSignups.map(item => item.count),
-        borderColor: 'rgb(75, 192, 192)',
-        tension: 0.1,
-        fill: true,
-        backgroundColor: 'rgba(75, 192, 192, 0.2)',
-      },
-    ],
-  };
-
-  const revenueData = {
-    labels: ['Bookings', 'Cancellations', 'Pending'],
-    datasets: [
-      {
-        data: [65, 20, 15],
+        data: [
+          stats.approvedListings,
+          stats.pendingListings,
+          stats.rejectedListings
+        ],
         backgroundColor: [
           'rgba(75, 192, 192, 0.8)',
-          'rgba(255, 99, 132, 0.8)',
           'rgba(255, 206, 86, 0.8)',
+          'rgba(255, 99, 132, 0.8)',
         ],
         borderColor: [
           'rgba(75, 192, 192, 1)',
-          'rgba(255, 99, 132, 1)',
           'rgba(255, 206, 86, 1)',
+          'rgba(255, 99, 132, 1)',
         ],
         borderWidth: 1,
       },
     ],
   };
+
+  if (loading) return <LoadingSpinner />;
 
   return (
     <>
@@ -157,72 +143,60 @@ const Dashboard = () => {
         <div className="admin-dashboard" data-aos="fade-up">
           <h1>Admin Dashboard</h1>
           
+          {error && (
+            <div className="error-message">
+              {error}
+            </div>
+          )}
+
           <div className="stats-grid">
+            <div className="stat-card">
+              <FontAwesomeIcon icon={faUsers} className="stat-icon primary" />
+              <div className="stat-content">
+                <h3>Total Users</h3>
+                <p>{stats.registeredUsers}</p>
+              </div>
+            </div>
+
             <div className="stat-card">
               <FontAwesomeIcon icon={faHouseUser} className="stat-icon" />
               <div className="stat-content">
                 <h3>Total Listings</h3>
-                <p>{dashboardStats.totalListings}</p>
+                <p>{stats.totalListings}</p>
               </div>
             </div>
 
             <div className="stat-card">
-              <FontAwesomeIcon icon={faUsers} className="stat-icon" />
+              <FontAwesomeIcon icon={faClipboardList} className="stat-icon success" />
               <div className="stat-content">
-                <h3>Registered Users</h3>
-                <p>{dashboardStats.registeredUsers}</p>
+                <h3>Approved Listings</h3>
+                <p>{stats.approvedListings}</p>
               </div>
             </div>
 
             <div className="stat-card">
-              <FontAwesomeIcon icon={faCalendarCheck} className="stat-icon" />
-              <div className="stat-content">
-                <h3>Upcoming Bookings</h3>
-                <p>{dashboardStats.upcomingBookings}</p>
-              </div>
-            </div>
-
-            <div className="stat-card">
-              <FontAwesomeIcon icon={faClipboardList} className="stat-icon" />
+              <FontAwesomeIcon icon={faClipboardList} className="stat-icon warning" />
               <div className="stat-content">
                 <h3>Pending Listings</h3>
-                <p>{dashboardStats.pendingListings}</p>
+                <p>{stats.pendingListings}</p>
               </div>
             </div>
 
             <div className="stat-card">
-              <FontAwesomeIcon icon={faExclamationTriangle} className="stat-icon warning" />
+              <FontAwesomeIcon icon={faExclamationTriangle} className="stat-icon error" />
               <div className="stat-content">
-                <h3>Reports</h3>
-                <p>{dashboardStats.reports}</p>
-              </div>
-            </div>
-
-            <div className="stat-card">
-              <FontAwesomeIcon icon={faDollarSign} className="stat-icon success" />
-              <div className="stat-content">
-                <h3>Revenue</h3>
-                <p>${dashboardStats.revenue.toLocaleString()}</p>
+                <h3>Rejected Listings</h3>
+                <p>{stats.rejectedListings}</p>
               </div>
             </div>
           </div>
 
           <div className="charts-grid">
             <div className="chart-card">
-              <h3>Weekly Bookings</h3>
-              <Bar options={chartOptions} data={bookingsData} />
-            </div>
-
-            <div className="chart-card">
-              <h3>User Signups Trend</h3>
-              <Line options={chartOptions} data={userSignupsData} />
-            </div>
-
-            <div className="chart-card">
-              <h3>Revenue Distribution</h3>
+              <h3>Listing Status Distribution</h3>
               <div className="doughnut-container">
                 <Doughnut 
-                  data={revenueData}
+                  data={listingStatusData}
                   options={{
                     ...chartOptions,
                     cutout: '70%',
@@ -245,6 +219,15 @@ const Dashboard = () => {
           border-radius: 20px;
           padding: 2rem;
           box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .error-message {
+          background-color: #ffe6e6;
+          color: #dc3545;
+          padding: 1rem;
+          border-radius: 8px;
+          margin-bottom: 1rem;
+          text-align: center;
         }
 
         .stats-grid {
@@ -288,6 +271,16 @@ const Dashboard = () => {
           background: rgba(40,167,69,0.1);
         }
 
+        .stat-icon.error {
+          color: #dc3545;
+          background: rgba(220,53,69,0.1);
+        }
+
+        .stat-icon.primary {
+          color: #007bff;
+          background: rgba(0,123,255,0.1);
+        }
+
         .charts-grid {
           display: grid;
           grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
@@ -317,29 +310,16 @@ const Dashboard = () => {
         }
 
         @media (max-width: 768px) {
+          .dashboard-container {
+            padding: 1rem;
+          }
+
           .charts-grid {
             grid-template-columns: 1fr;
           }
-        }
 
-        @keyframes slideUp {
-          from {
-            height: 0;
-            opacity: 0;
-          }
-          to {
-            opacity: 1;
-          }
-        }
-
-        @keyframes fadeIn {
-          from {
-            opacity: 0;
-            transform: scale(0);
-          }
-          to {
-            opacity: 1;
-            transform: scale(1);
+          .chart-card {
+            padding: 1rem;
           }
         }
       `}</style>

@@ -12,7 +12,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import AddListing from "./pages/AddListing";
 import ManageListings from "./pages/ManageListings";
-import EditListing from "./pages/EditListing";
+import EditListing from"./pages/EditListing";
 import Payment from "./pages/Payment";
 import ManageBookings from "./pages/ManageBookings";
 import ManageUsers from './pages/ManageUsers'; // Import the ManageUsers page

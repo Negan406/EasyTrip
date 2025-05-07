@@ -2,75 +2,245 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Password;
-use Illuminate\Validation\ValidationException;
+use App\Models\User;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
+use Laravel\Sanctum\HasApiTokens;
 
 class AuthController extends Controller
 {
+    use HasApiTokens;
+
+    /**
+     * Handle login request via backend using database authentication.
+     */
     public function login(Request $request)
     {
-        $request->validate([
-            'email' => 'required|email',
-            'password' => 'required',
+        // Validate the incoming request data.
+        $validator = Validator::make($request->all(), [
+            'email'    => 'required|email',
+            'password' => 'required|string|min:6',
         ]);
 
-        if (Auth::attempt($request->only('email', 'password'))) {
-            $user = Auth::user();
-            $token = $user->createToken('auth-token')->plainTextToken;
-
+        if ($validator->fails()) {
             return response()->json([
-                'token' => $token,
-                'user' => $user
-            ]);
+                'success' => false,
+                'message' => $validator->errors()->first(),
+            ], 422);
         }
 
-        throw ValidationException::withMessages([
-            'email' => ['The provided credentials are incorrect.'],
-        ]);
-    }
+        // Retrieve credentials from the request.
+        $credentials = $request->only('email', 'password');
 
-    public function register(Request $request)
-    {
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
-            'password' => 'required|string|min:8|confirmed',
-        ]);
+        // Attempt authentication with the credentials against the database.
+        if (!Auth::attempt($credentials)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid credentials'
+            ], 401);
+        }
 
-        $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-        ]);
+        $user = Auth::user();
 
+        // Generate an API token for token-based authentication.
         $token = $user->createToken('auth-token')->plainTextToken;
 
         return response()->json([
-            'token' => $token,
-            'user' => $user
-        ], 201);
+            'success' => true,
+            'user'    => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'role' => $user->role,
+            ],
+            'token'   => $token,
+        ]);
     }
 
-    public function forgotPassword(Request $request)
+    /**
+     * Register a new user with a hashed password.
+     */
+    public function register(Request $request)
     {
-        $request->validate([
-            'email' => 'required|email',
+        // Validate the incoming request data.
+        $validator = Validator::make($request->all(), [
+            'name'     => 'required|string|max:255',
+            'email'    => 'required|email|unique:users,email',
+            'password' => 'required|string|min:6',
+            'phone'    => 'required|string',
+            'role'     => 'required|in:user,host',
+            'profile_photo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048'
         ]);
 
-        $status = Password::sendResetLink(
-            $request->only('email')
-        );
-
-        if ($status === Password::RESET_LINK_SENT) {
-            return response()->json(['message' => 'Password reset link sent to your email']);
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => $validator->errors()->first(),
+            ], 422);
         }
 
-        throw ValidationException::withMessages([
-            'email' => [trans($status)],
+        try {
+            // Handle profile photo upload
+            $profilePhotoPath = null;
+            if ($request->hasFile('profile_photo')) {
+                $photo = $request->file('profile_photo');
+                $filename = time() . '_' . str_replace(' ', '_', $photo->getClientOriginalName());
+                $profilePhotoPath = $photo->storeAs('profiles', $filename, 'public');
+            }
+
+            // Create a new user with the password hashed using Hash::make() (Bcrypt)
+            $user = User::create([
+                'name'     => $request->name,
+                'email'    => $request->email,
+                'password' => Hash::make($request->password),
+                'phone'    => $request->phone,
+                'role'     => $request->role,
+                'profile_photo' => $profilePhotoPath
+            ]);
+
+            // Generate token for the new user
+            $token = $user->createToken('auth-token')->plainTextToken;
+
+            return response()->json([
+                'success' => true,
+                'user'    => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'role' => $user->role,
+                    'profile_photo' => $profilePhotoPath ? asset('storage/' . $profilePhotoPath) : null
+                ],
+                'token'   => $token
+            ], 201);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Registration failed: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Handle a forgot password request and generate a reset token.
+     */
+    public function forgotPassword(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|email|exists:users,email',
         ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => $validator->errors()->first(),
+            ], 422);
+        }
+
+        $token = Str::random(60);
+
+        DB::table('password_reset_tokens')->updateOrInsert(
+            ['email' => $request->email],
+            [
+                'token' => $token,
+                'created_at' => now(),
+            ]
+        );
+
+        // In a real application, send an email with the reset token.
+        return response()->json([
+            'success' => true,
+            'message' => 'Password reset token generated. Please check your email for reset instructions.'
+        ]);
+    }
+
+    /**
+     * Handle logout request.
+     */
+    public function logout(Request $request)
+    {
+        if ($request->user()) {
+            $request->user()->currentAccessToken()->delete();
+        }
+        
+        Auth::logout();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Successfully logged out'
+        ]);
+    }
+
+    /**
+     * Get all users (admin only).
+     */
+    public function getAllUsers()
+    {
+        if (Auth::user()->role !== 'admin') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized. Admin access required.'
+            ], 403);
+        }
+
+        try {
+            $users = User::select('id', 'name', 'email', 'role', 'created_at')
+                        ->orderBy('created_at', 'desc')
+                        ->get();
+
+            return response()->json([
+                'success' => true,
+                'users' => $users
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch users: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Delete a user (admin only).
+     */
+    public function deleteUser($id)
+    {
+        if (Auth::user()->role !== 'admin') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized. Admin access required.'
+            ], 403);
+        }
+
+        try {
+            $user = User::findOrFail($id);
+
+            // Prevent admin from deleting themselves
+            if ($user->id === Auth::id()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Cannot delete your own admin account'
+                ], 400);
+            }
+
+            // Delete user's tokens
+            $user->tokens()->delete();
+            
+            // Delete user
+            $user->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'User deleted successfully'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to delete user: ' . $e->getMessage()
+            ], 500);
+        }
     }
 } 

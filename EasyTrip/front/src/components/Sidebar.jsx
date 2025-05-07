@@ -21,7 +21,7 @@ const Sidebar = ({ isOpen, onClose }) => {
         <ul className="sidebar-menu">
           <li className="sidebar-item">
             <Link to="/" onClick={onClose}>
-              <FontAwesomeIcon icon={faHome} /> Home
+              <FontAwesomeIcon icon={faHome} /> Homes
             </Link>
           </li>
           {isLoggedIn && (
