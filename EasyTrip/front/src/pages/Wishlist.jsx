@@ -66,71 +66,106 @@ const Wishlist = () => {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="loading-container">
-        <LoadingSpinner />
-      </div>
-    );
-  }
-
   return (
-    <div className="wishlist-page">
+    <div className="page-wrapper">
       <Sidebar />
-      <main className="wishlist-container">
-        <div className="wishlist-header">
-          <Link to="/" className="back-button">
-            <FontAwesomeIcon icon={faArrowLeft} /> Back to listings
-          </Link>
-          <h1><FontAwesomeIcon icon={faHeart} /> My Wishlist</h1>
-        </div>
-
-        {error && (
-          <div className="error-message">
-            {error}
+      <div className="content-area">
+        {loading ? (
+          <div className="loading-container">
+            <LoadingSpinner />
           </div>
-        )}
-
-        <div className="wishlist-grid">
-          {wishlistItems.length > 0 ? (
-            wishlistItems.map((listing) => (
-              <div 
-                key={listing.id} 
-                className="wishlist-item"
-                data-aos="fade-up"
-              >
-                <ListingCard 
-                  listing={listing} 
-                  onRemoveFromWishlist={() => handleRemoveFromWishlist(listing.id)}
-                  isInWishlist={true}
-                />
-              </div>
-            ))
-          ) : (
-            <div className="empty-wishlist" data-aos="fade-up">
-              <FontAwesomeIcon icon={faHeart} className="empty-icon" />
-              <h2>Your wishlist is empty</h2>
-              <p>Save your favorite places by clicking the heart icon on any listing</p>
-              <Link to="/" className="browse-button">
-                Browse Listings
+        ) : (
+          <main className="wishlist-container">
+            <div className="wishlist-header">
+              <Link to="/" className="back-button">
+                <FontAwesomeIcon icon={faArrowLeft} /> Back to listings
               </Link>
+              <h1><FontAwesomeIcon icon={faHeart} /> My Wishlist</h1>
             </div>
-          )}
+
+            {error && (
+              <div className="error-message">
+                {error}
+              </div>
+            )}
+
+            <div className="wishlist-grid">
+              {wishlistItems.length > 0 ? (
+                wishlistItems.map((listing) => (
+                  <div 
+                    key={listing.id} 
+                    className="wishlist-item"
+                    data-aos="fade-up"
+                  >
+                    <ListingCard 
+                      listing={listing} 
+                      onRemoveFromWishlist={() => handleRemoveFromWishlist(listing.id)}
+                      isInWishlist={true}
+                    />
+                  </div>
+                ))
+              ) : (
+                <div className="empty-wishlist" data-aos="fade-up">
+                  <FontAwesomeIcon icon={faHeart} className="empty-icon" />
+                  <h2>Your wishlist is empty</h2>
+                  <p>Save your favorite places by clicking the heart icon on any listing</p>
+                  <Link to="/" className="browse-button">
+                    Browse Listings
+                  </Link>
+                </div>
+              )}
+            </div>
+          </main>
+        )}
+      </div>
+
+      <footer className="footer">
+        <div className="footer-content">
+          <p>&copy; {new Date().getFullYear()} EasyTrip. All rights reserved.</p>
         </div>
-      </main>
+      </footer>
 
       <style>{`
-        .wishlist-page {
+        .page-wrapper {
+          display: flex;
+          flex-direction: column;
+          min-height: 100vh;
+        }
+
+        .content-area {
+          flex: 1;
           padding: 2rem;
           max-width: 1200px;
           margin: 0 auto;
+          width: 100%;
         }
 
         .loading-container {
           display: flex;
           justify-content: center;
           align-items: center;
-          min-height: 60vh;
+          min-height: 400px;
+        }
+
+        .footer {
+          margin-top: auto;
+          background: #f8f9fa;
+          border-top: 1px solid #e9ecef;
+          padding: 20px 0;
+          width: 100%;
+          text-align: center;
+        }
+
+        .footer-content {
+          max-width: 1280px;
+          margin: 0 auto;
+          color: #6c757d;
+        }
+
+        .wishlist-page {
+          padding: 2rem;
+          max-width: 1200px;
+          margin: 0 auto;
         }
 
         .wishlist-header {

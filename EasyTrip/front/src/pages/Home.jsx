@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from 'react-router-dom';
 import ListingCard from "../components/ListingCard";
-import LoadingSpinner from "../components/LoadingSpinner";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import PropTypes from 'prop-types';
 import { 
@@ -16,7 +15,11 @@ import {
   faCampground,
   faSnowflake,
   faSun,
-  faAnchor
+  faAnchor,
+  faPlane,
+  faHotel,
+  faMapMarkedAlt,
+  faCompass
 } from "@fortawesome/free-solid-svg-icons";
 import axios from "axios";
 
@@ -46,8 +49,8 @@ const Home = ({ searchTerm }) => {
   const [filteredListings, setFilteredListings] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [loading, setLoading] = useState(true);
+  const [loadingProgress, setLoadingProgress] = useState(0);
   const [categoryLoading, setCategoryLoading] = useState(false);
-  const [users, setUsers] = useState([]);
   const role = localStorage.getItem('role');
   const navigate = useNavigate();
   const [deleteConfirmation, setDeleteConfirmation] = useState(null);
@@ -55,55 +58,127 @@ const Home = ({ searchTerm }) => {
   const [notification, setNotification] = useState(null);
   const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
   const [showSuccessMsg, setShowSuccessMsg] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
   const [clickedListingId, setClickedListingId] = useState(null);
+  const [loadingIcons] = useState([faHotel, faPlane, faMapMarkedAlt, faCompass, faGlobe, faUmbrellaBeach]);
+  const [currentIconIndex, setCurrentIconIndex] = useState(0);
+
+  // Animation for loading icons
+  useEffect(() => {
+    if (loading || categoryLoading) {
+      const iconInterval = setInterval(() => {
+        setCurrentIconIndex(prevIndex => (prevIndex + 1) % loadingIcons.length);
+      }, 1000);
+      
+      return () => clearInterval(iconInterval);
+    }
+  }, [loading, categoryLoading, loadingIcons]);
+
+  // Progress bar animation
+  useEffect(() => {
+    if (loading) {
+      const progressInterval = setInterval(() => {
+        setLoadingProgress(prev => {
+          if (prev >= 90) {
+            clearInterval(progressInterval);
+            return 90; // Cap at 90% until actual data loads
+          }
+          return prev + 1;
+        });
+      }, 30);
+      
+      return () => clearInterval(progressInterval);
+    }
+  }, [loading]);
 
   // Fetch listings from API
   useEffect(() => {
     const fetchListings = async () => {
       setLoading(true);
+      setLoadingProgress(0);
+      
       try {
         const response = await axios.get('http://localhost:8000/api/listings');
         console.log('API Response:', response.data);
         
         if (response.data.success && Array.isArray(response.data.data)) {
-          const formattedListings = response.data.data.map(listing => ({
-            id: listing.id,
-            title: listing.title,
-            location: listing.location,
-            price: parseFloat(listing.price),
-            main_photo: listing.main_photo,
-            description: listing.description,
-            category: listing.category,
-            status: listing.status,
-            wishlist_id: listing.wishlist_id,
-            host: listing.host
-          }));
+          const formattedListings = response.data.data.map(listing => {
+            const rating = listing.average_rating ? parseFloat(listing.average_rating) : 0;
+            const totalRatings = parseInt(listing.total_ratings || 0);
+            
+            return {
+              id: listing.id,
+              title: listing.title,
+              location: listing.location,
+              price: parseFloat(listing.price),
+              main_photo: listing.main_photo,
+              description: listing.description,
+              category: listing.category,
+              status: listing.status,
+              wishlist_id: listing.wishlist_id,
+              host: listing.host,
+              rating: rating > 0 ? rating.toFixed(1) : 0,
+              total_ratings: totalRatings
+            };
+          });
 
-          setListings(formattedListings);
-          setFilteredListings(formattedListings);
+          console.log('Formatted listings with ratings:', formattedListings);
+
+          setLoadingProgress(100);
+          
+          setTimeout(() => {
+            setListings(formattedListings);
+            setFilteredListings(formattedListings);
+            setLoading(false);
+          }, 500);
         } else {
           console.error("Invalid response format:", response.data);
           setListings([]);
           setFilteredListings([]);
+          setLoading(false);
         }
       } catch (error) {
         console.error("Error fetching listings:", error);
         setListings([]);
         setFilteredListings([]);
-      } finally {
         setLoading(false);
       }
     };
 
     fetchListings();
+
+    // Listen for rating updates
+    const handleReviewUpdate = (event) => {
+      const { listingId, averageRating, totalReviews } = event.detail;
+      console.log('Updating rating for listing:', { listingId, averageRating, totalReviews });
+      
+      const updateListingRatings = (prevListings) => 
+        prevListings.map(listing => {
+          if (listing.id === parseInt(listingId)) {
+            const newRating = parseFloat(averageRating);
+            return { 
+              ...listing, 
+              rating: newRating > 0 ? newRating.toFixed(1) : 0,
+              total_ratings: parseInt(totalReviews)
+            };
+          }
+          return listing;
+        });
+
+      setListings(updateListingRatings);
+      setFilteredListings(updateListingRatings);
+    };
+
+    window.addEventListener('reviewUpdated', handleReviewUpdate);
+
+    return () => {
+      window.removeEventListener('reviewUpdated', handleReviewUpdate);
+    };
   }, []);
 
   useEffect(() => {
     if (role === 'admin') {
-      const storedUsers = JSON.parse(localStorage.getItem('users')) || [];
-      setUsers(storedUsers);
+      // No need to store users since we're not using them
+      // Just keeping this effect to check role
     }
   }, [role]);
 
@@ -133,13 +208,7 @@ const Home = ({ searchTerm }) => {
     setSelectedCategory(category);
     setTimeout(() => {
       setCategoryLoading(false);
-    }, 500);
-  };
-
-  const handleDeleteUser = (userId) => {
-    const updatedUsers = users.filter(user => user.id !== userId);
-    setUsers(updatedUsers);
-    localStorage.setItem('users', JSON.stringify(updatedUsers));
+    }, 800); // Increased for better visibility
   };
 
   const handleDeleteClick = (listingId) => {
@@ -202,123 +271,349 @@ const Home = ({ searchTerm }) => {
     setDeleteConfirmation(null);
   };
 
-  const handleListingClick = (listingId) => {
-    setClickedListingId(listingId);
-    setTimeout(() => {
-      navigate(`/listing/${listingId}`);
-    }, 500);
-  };
-
-  // Add load more functionality
-  const loadMore = () => {
-    if (currentPage < totalPages) {
-      setCurrentPage(prev => prev + 1);
-    }
-  };
-
   return (
-    <div className="home-container">
-      {loading ? (
-        <LoadingSpinner />
-      ) : (
-        <>
-          {showSuccessMsg && (
-            <div className="success-message" data-aos="fade-down">
-              Listing deleted successfully!
-            </div>
-          )}
-          
-          {notification && (
-            <div className={`notification ${notification.type}`}>
-              {notification.message}
-              <button className="close-btn" onClick={() => setNotification(null)}>×</button>
-            </div>
-          )}
-
-          <div className="filters-container">
-            <div className="filters" data-aos="fade-down">
-              {categories.map((category) => (
-                <button
-                  key={category.id}
-                  className={`filter-button ${selectedCategory === category.id ? "active" : ""}`}
-                  onClick={() => handleFilterClick(category.id)}
-                >
-                  <FontAwesomeIcon icon={category.icon} />
-                  <span>{category.name}</span>
-                </button>
-              ))}
-            </div>
+    <div className="page-wrapper">
+      <div className="home-container">
+        {showSuccessMsg && (
+          <div className="success-message" data-aos="fade-down">
+            Listing deleted successfully!
           </div>
+        )}
+        
+        {notification && (
+          <div className={`notification ${notification.type}`}>
+            {notification.message}
+            <button className="close-btn" onClick={() => setNotification(null)}>×</button>
+          </div>
+        )}
 
-          <div className="listings-container">
-            {categoryLoading ? (
-              <LoadingSpinner />
-            ) : filteredListings.length === 0 ? (
-              <div className="no-results" data-aos="fade-up">
-                <p>No listings found for this category.</p>
-              </div>
-            ) : (
-              <div className="listings">
-                {filteredListings.map((listing, index) => (
-                  <div 
-                    key={listing.id} 
-                    data-aos="fade-up"
-                    data-aos-delay={index * 100}
-                    className={`listing-wrapper ${clickedListingId === listing.id ? 'loading' : ''}`}
-                  >
-                    <ListingCard listing={listing} />
-                    {isLoggedIn && role === 'admin' && (
-                      <button 
-                        className="delete-button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteClick(listing.id);
-                        }}
-                        disabled={deleteLoading}
-                      >
-                        <FontAwesomeIcon icon="trash" className="delete-icon" />
-                        <span>Delete</span>
-                      </button>
-                    )}
+        <div className="filters-container">
+          <div className="filters" data-aos="fade-down">
+            {categories.map((category) => (
+              <button
+                key={category.id}
+                className={`filter-button ${selectedCategory === category.id ? "active" : ""}`}
+                onClick={() => handleFilterClick(category.id)}
+              >
+                <FontAwesomeIcon icon={category.icon} />
+                <span>{category.name}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="content-area">
+          {loading ? (
+            <div className="loading-container">
+              <div className="spinner-wrapper">
+                <div className="custom-spinner">
+                  <div className="spinner-ring"></div>
+                  <div className="spinner-icon">
+                    <FontAwesomeIcon icon={loadingIcons[currentIconIndex]} />
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {deleteConfirmation && (
-            <>
-              <div className="modal-overlay" onClick={handleCancelDelete}></div>
-              <div className="delete-confirmation-modal">
-                <h3>Confirm Deletion</h3>
-                <p>Are you sure you want to delete this listing? This action cannot be undone.</p>
-                <div className="confirmation-buttons">
-                  <button 
-                    className="cancel-delete"
-                    onClick={handleCancelDelete}
-                    disabled={deleteLoading}
-                  >
-                    Cancel
-                  </button>
-                  <button 
-                    className={`confirm-delete ${deleteLoading ? 'loading' : ''}`}
-                    onClick={() => handleConfirmDelete(deleteConfirmation)}
-                    disabled={deleteLoading}
-                  >
-                    {deleteLoading ? 'Deleting...' : 'Delete'}
-                  </button>
+                </div>
+                <h3 className="loading-title">Discovering amazing stays...</h3>
+                <p className="loading-text">We&apos;re finding the perfect getaways for you</p>
+                <div className="loading-progress">
+                  <div className="progress-bar" style={{ width: `${loadingProgress}%` }}></div>
+                </div>
+                <div className="loading-destinations">
+                  <span className="destination">Paris</span>
+                  <span className="destination">Bali</span>
+                  <span className="destination">New York</span>
+                  <span className="destination">Tokyo</span>
                 </div>
               </div>
-            </>
+            </div>
+          ) : (
+            <div className="listings-container">
+              {categoryLoading ? (
+                <div className="loading-container category-loading">
+                  <div className="spinner-wrapper">
+                    <div className="custom-spinner">
+                      <div className="spinner-ring"></div>
+                      <div className="spinner-icon">
+                        <FontAwesomeIcon icon={loadingIcons[currentIconIndex]} />
+                      </div>
+                    </div>
+                    <h3 className="loading-title">Filtering by {categories.find(c => c.id === selectedCategory)?.name}</h3>
+                    <p className="loading-text">Finding your perfect match...</p>
+                  </div>
+                </div>
+              ) : filteredListings.length === 0 ? (
+                <div className="no-results" data-aos="fade-up">
+                  <p>No listings found for this category.</p>
+                </div>
+              ) : (
+                <div className="listings">
+                  {filteredListings.map((listing, index) => (
+                    <div 
+                      key={listing.id} 
+                      data-aos="fade-up"
+                      data-aos-delay={index * 100}
+                      className={`listing-wrapper ${clickedListingId === listing.id ? 'loading' : ''}`}
+                      onClick={() => {
+                        setClickedListingId(listing.id);
+                        setTimeout(() => {
+                          navigate(`/listing/${listing.id}`);
+                        }, 500);
+                      }}
+                    >
+                      <ListingCard listing={listing} />
+                      {isLoggedIn && role === 'admin' && (
+                        <button 
+                          className="delete-button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteClick(listing.id);
+                          }}
+                          disabled={deleteLoading}
+                        >
+                          <FontAwesomeIcon icon="trash" className="delete-icon" />
+                          <span>Delete</span>
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           )}
+        </div>
+      </div>
+
+      <footer className="footer">
+        <div className="footer-content">
+          <p>&copy; {new Date().getFullYear()} EasyTrip. All rights reserved.</p>
+        </div>
+      </footer>
+
+      {deleteConfirmation && (
+        <>
+          <div className="modal-overlay" onClick={handleCancelDelete}></div>
+          <div className="delete-confirmation-modal">
+            <h3>Confirm Deletion</h3>
+            <p>Are you sure you want to delete this listing? This action cannot be undone.</p>
+            <div className="confirmation-buttons">
+              <button 
+                className="cancel-delete"
+                onClick={handleCancelDelete}
+                disabled={deleteLoading}
+              >
+                Cancel
+              </button>
+              <button 
+                className={`confirm-delete ${deleteLoading ? 'loading' : ''}`}
+                onClick={() => handleConfirmDelete(deleteConfirmation)}
+                disabled={deleteLoading}
+              >
+                {deleteLoading ? 'Deleting...' : 'Delete'}
+              </button>
+            </div>
+          </div>
         </>
       )}
 
       <style>{`
+        .page-wrapper {
+          display: flex;
+          flex-direction: column;
+          min-height: 100vh;
+        }
+
         .home-container {
+          flex: 1;
           max-width: 1280px;
           margin: 0 auto;
           padding: 20px 40px;
+          width: 100%;
+        }
+
+        .content-area {
+          min-height: 400px; /* Minimum height to push footer down */
+        }
+
+        .loading-container {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          min-height: 400px;
+          width: 100%;
+        }
+
+        .category-loading {
+          min-height: 200px;
+        }
+
+        .spinner-wrapper {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          padding: 3rem;
+          background-color: white;
+          border-radius: 1rem;
+          box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+          max-width: 500px;
+          width: 90%;
+          text-align: center;
+          animation: fadeIn 0.5s ease;
+        }
+
+        .custom-spinner {
+          position: relative;
+          width: 100px;
+          height: 100px;
+          margin-bottom: 1.5rem;
+        }
+
+        .spinner-ring {
+          position: absolute;
+          width: 100%;
+          height: 100%;
+          border: 4px solid transparent;
+          border-top-color: #ff385c;
+          border-radius: 50%;
+          animation: spin 1.5s linear infinite;
+        }
+
+        .spinner-ring:before {
+          content: '';
+          position: absolute;
+          top: 5px;
+          left: 5px;
+          right: 5px;
+          bottom: 5px;
+          border: 4px solid transparent;
+          border-top-color: #00a699;
+          border-radius: 50%;
+          animation: spin 3s linear infinite;
+        }
+
+        .spinner-ring:after {
+          content: '';
+          position: absolute;
+          top: 15px;
+          left: 15px;
+          right: 15px;
+          bottom: 15px;
+          border: 4px solid transparent;
+          border-top-color: #484848;
+          border-radius: 50%;
+          animation: spin 1.5s linear infinite reverse;
+        }
+
+        .spinner-icon {
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          font-size: 2rem;
+          color: #ff385c;
+          animation: pulse 2s ease infinite;
+        }
+
+        .loading-title {
+          font-size: 1.5rem;
+          font-weight: 600;
+          color: #343a40;
+          margin: 0 0 0.5rem;
+        }
+
+        .loading-text {
+          margin: 0 0 1.5rem;
+          color: #6c757d;
+          font-size: 1rem;
+        }
+
+        .loading-progress {
+          width: 80%;
+          height: 6px;
+          background-color: #e9ecef;
+          border-radius: 3px;
+          overflow: hidden;
+          margin-bottom: 1rem;
+        }
+
+        .progress-bar {
+          height: 100%;
+          width: 0;
+          background: linear-gradient(to right, #ff385c, #00a699);
+          border-radius: 3px;
+          transition: width 0.3s ease;
+        }
+
+        .loading-destinations {
+          display: flex;
+          gap: 15px;
+          flex-wrap: wrap;
+          justify-content: center;
+          margin-top: 0.5rem;
+        }
+
+        .destination {
+          padding: 5px 12px;
+          background-color: #f8f9fa;
+          border-radius: 20px;
+          font-size: 0.85rem;
+          color: #6c757d;
+          animation: pulse 2s infinite alternate;
+          animation-delay: calc(var(--i, 0) * 0.5s);
+        }
+
+        .destination:nth-child(1) { --i: 0; }
+        .destination:nth-child(2) { --i: 1; }
+        .destination:nth-child(3) { --i: 2; }
+        .destination:nth-child(4) { --i: 3; }
+
+        @keyframes spin {
+          0% {
+            transform: rotate(0deg);
+          }
+          100% {
+            transform: rotate(360deg);
+          }
+        }
+
+        @keyframes pulse {
+          0% {
+            opacity: 0.6;
+            transform: translate(-50%, -50%) scale(0.9);
+          }
+          50% {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1.1);
+          }
+          100% {
+            opacity: 0.6;
+            transform: translate(-50%, -50%) scale(0.9);
+          }
+        }
+
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        .footer {
+          margin-top: auto;
+          background: #f8f9fa;
+          border-top: 1px solid #e9ecef;
+          padding: 20px 0;
+          width: 100%;
+        }
+
+        .footer-content {
+          max-width: 1280px;
+          margin: 0 auto;
+          text-align: center;
+          color: #6c757d;
         }
 
         .filters-container {
@@ -376,6 +671,7 @@ const Home = ({ searchTerm }) => {
         .listings-container {
           position: relative;
           min-height: 200px;
+         
         }
 
         .listings {
@@ -384,6 +680,7 @@ const Home = ({ searchTerm }) => {
           gap: 24px;
           padding: 0;
           animation: fadeIn 0.5s ease;
+           
         }
 
         .listing-wrapper {
@@ -391,6 +688,7 @@ const Home = ({ searchTerm }) => {
           transition: all 0.3s ease;
           border-radius: 12px;
           overflow: hidden;
+          cursor: pointer;
         }
 
         .listing-wrapper img {
@@ -475,17 +773,6 @@ const Home = ({ searchTerm }) => {
           z-index: 1000;
           animation: slideDown 0.3s ease;
           box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        }
-
-        @keyframes fadeIn {
-          from {
-            opacity: 0;
-            transform: translateY(10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
         }
 
         @keyframes slideDown {
@@ -589,6 +876,89 @@ const Home = ({ searchTerm }) => {
           }
           to {
             transform: translateX(0);
+            opacity: 1;
+          }
+        }
+
+        .modal-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(0, 0, 0, 0.5);
+          z-index: 1000;
+          animation: fadeIn 0.3s ease;
+        }
+
+        .delete-confirmation-modal {
+          position: fixed;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          background: white;
+          padding: 30px;
+          border-radius: 12px;
+          z-index: 1001;
+          width: 90%;
+          max-width: 500px;
+          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+          animation: scaleIn 0.3s ease;
+        }
+
+        .delete-confirmation-modal h3 {
+          margin-top: 0;
+          color: #222;
+        }
+
+        .confirmation-buttons {
+          display: flex;
+          justify-content: flex-end;
+          gap: 15px;
+          margin-top: 20px;
+        }
+
+        .cancel-delete,
+        .confirm-delete {
+          padding: 10px 20px;
+          border-radius: 8px;
+          font-weight: 500;
+          cursor: pointer;
+          transition: all 0.3s ease;
+        }
+
+        .cancel-delete {
+          background: #f1f3f5;
+          border: none;
+          color: #495057;
+        }
+
+        .cancel-delete:hover:not(:disabled) {
+          background: #e9ecef;
+        }
+
+        .confirm-delete {
+          background: #ff385c;
+          border: none;
+          color: white;
+        }
+
+        .confirm-delete:hover:not(:disabled) {
+          background: #e31c5f;
+        }
+
+        .confirm-delete.loading {
+          opacity: 0.8;
+          cursor: wait;
+        }
+
+        @keyframes scaleIn {
+          from {
+            transform: translate(-50%, -50%) scale(0.9);
+            opacity: 0;
+          }
+          to {
+            transform: translate(-50%, -50%) scale(1);
             opacity: 1;
           }
         }

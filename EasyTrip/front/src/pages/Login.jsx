@@ -89,7 +89,7 @@ const Login = () => {
           <Link to="/register">Create an Account</Link>
           <Link to="/forgot-password">Forgot Password?</Link>
         </div>
-      </div>
+      </div><br /><br /><br />
 
       <style jsx>{`
         .login-container {

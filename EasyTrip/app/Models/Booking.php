@@ -15,12 +15,12 @@ class Booking extends Model
      * @var array<int, string>
      */
     protected $fillable = [
-        'listing_id',
         'user_id',
+        'listing_id',
         'start_date',
         'end_date',
         'total_price',
-        'payment_status',
+        'status'
     ];
 
     /**
@@ -31,17 +31,8 @@ class Booking extends Model
     protected $casts = [
         'start_date' => 'date',
         'end_date' => 'date',
-        'total_price' => 'decimal:2',
-        'payment_status' => 'string'
+        'total_price' => 'decimal:2'
     ];
-
-    /**
-     * Get the listing that was booked.
-     */
-    public function listing()
-    {
-        return $this->belongsTo(Listing::class);
-    }
 
     /**
      * Get the user who made the booking.
@@ -49,5 +40,13 @@ class Booking extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * Get the listing that was booked.
+     */
+    public function listing()
+    {
+        return $this->belongsTo(Listing::class);
     }
 } 

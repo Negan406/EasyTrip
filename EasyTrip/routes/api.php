@@ -32,6 +32,12 @@ Route::middleware(['auth:sanctum'])->group(function () {
     // User listings route (must come before resource routes)
     Route::get('/listings/user', [ListingController::class, 'getUserListings']);
     
+    // Custom booking routes (must come before resource routes)
+    Route::get('/bookings/host', [BookingController::class, 'hostBookings']);
+    Route::post('/bookings/{booking}/accept', [BookingController::class, 'acceptBooking']);
+    Route::post('/bookings/{booking}/refuse', [BookingController::class, 'refuseBooking']);
+    Route::get('/bookings/check/{listing}', [BookingController::class, 'checkBookingStatus']);
+    
     // Resource routes
     Route::apiResource('listings', ListingController::class);
     Route::apiResource('bookings', BookingController::class);
@@ -39,7 +45,6 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::apiResource('wishlists', WishlistController::class);
     
     // Additional routes
-    Route::get('/bookings/check/{listing}', [BookingController::class, 'checkBookingStatus']);
     Route::post('/logout', [AuthController::class, 'logout']);
 });
 

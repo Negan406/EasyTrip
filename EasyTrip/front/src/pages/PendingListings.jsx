@@ -100,54 +100,104 @@ const PendingListings = () => {
     }
   };
 
-  if (loading) return <LoadingSpinner />;
-
   return (
-    <div className="pending-page">
-      <main className="pending-container">
-        <h1 className="page-title">Pending Listings</h1>
-        {notification && (
-          <Notification
-            type={notification.type}
-            message={notification.message}
-            onClose={() => setNotification(null)}
-          />
-        )}
-        {pendingListings.length === 0 ? (
-          <div className="no-results-message">
-            <FontAwesomeIcon icon={faCheck} className="check-icon" />
-            <p>No pending listings to review</p>
+    <div className="page-wrapper">
+      <div className="content-area">
+        {loading ? (
+          <div className="loading-container">
+            <LoadingSpinner />
           </div>
         ) : (
-          <div className="pending-grid">
-            {pendingListings.map(listing => (
-              <div key={listing.id} className="pending-item" data-aos="fade-up">
-                <ListingCard listing={listing} />
-                <div className="action-container">
-                  <button 
-                    className={`action-button approve ${processing === listing.id ? 'processing' : ''}`}
-                    onClick={() => handleApprove(listing)}
-                    disabled={processing !== null}
-                  >
-                    <FontAwesomeIcon icon={faCheck} />
-                    <span>Accept</span>
-                  </button>
-                  <button 
-                    className={`action-button reject ${processing === listing.id ? 'processing' : ''}`}
-                    onClick={() => handleReject(listing)}
-                    disabled={processing !== null}
-                  >
-                    <FontAwesomeIcon icon={faTimes} />
-                    <span>Reject</span>
-                  </button>
-                </div>
+          <main className="pending-container">
+            <h1 className="page-title">Pending Listings</h1>
+            
+            {notification && (
+              <Notification
+                type={notification.type}
+                message={notification.message}
+                onClose={() => setNotification(null)}
+              />
+            )}
+            
+            {pendingListings.length === 0 ? (
+              <div className="no-results-message">
+                <FontAwesomeIcon icon={faCheck} className="check-icon" />
+                <p>No pending listings to review</p>
               </div>
-            ))}
-          </div>
+            ) : (
+              <div className="pending-grid">
+                {pendingListings.map(listing => (
+                  <div key={listing.id} className="pending-item" data-aos="fade-up">
+                    <ListingCard listing={listing} />
+                    <div className="action-container">
+                      <button 
+                        className={`action-button approve ${processing === listing.id ? 'processing' : ''}`}
+                        onClick={() => handleApprove(listing)}
+                        disabled={processing !== null}
+                      >
+                        <FontAwesomeIcon icon={faCheck} />
+                        <span>Accept</span>
+                      </button>
+                      <button 
+                        className={`action-button reject ${processing === listing.id ? 'processing' : ''}`}
+                        onClick={() => handleReject(listing)}
+                        disabled={processing !== null}
+                      >
+                        <FontAwesomeIcon icon={faTimes} />
+                        <span>Reject</span>
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </main>
         )}
-      </main>
+      </div>
+
+      <footer className="footer">
+        <div className="footer-content">
+          <p>&copy; {new Date().getFullYear()} EasyTrip. All rights reserved.</p>
+        </div>
+      </footer>
 
       <style>{`
+        .page-wrapper {
+          display: flex;
+          flex-direction: column;
+          min-height: 100vh;
+        }
+
+        .content-area {
+          flex: 1;
+          padding: 2rem;
+          max-width: 1200px;
+          margin: 0 auto;
+          width: 100%;
+        }
+
+        .loading-container {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          min-height: 400px;
+        }
+
+        .footer {
+          margin-top: auto;
+          background: #f8f9fa;
+          border-top: 1px solid #e9ecef;
+          padding: 20px 0;
+          width: 100%;
+          text-align: center;
+        }
+
+        .footer-content {
+          max-width: 1280px;
+          margin: 0 auto;
+          color: #6c757d;
+        }
+
         .pending-page {
           padding: 2rem;
           max-width: 1200px;
@@ -278,7 +328,7 @@ const PendingListings = () => {
         }
 
         @media (max-width: 768px) {
-          .pending-page {
+          .content-area {
             padding: 1rem;
           }
 

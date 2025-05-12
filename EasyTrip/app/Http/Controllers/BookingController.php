@@ -7,6 +7,7 @@ use App\Models\Listing;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class BookingController extends Controller
 {
@@ -15,12 +16,35 @@ class BookingController extends Controller
      */
     public function index()
     {
-        $bookings = Booking::with(['listing', 'listing.host'])
-            ->where('user_id', Auth::id())
-            ->latest()
-            ->paginate(10);
+        try {
+            $bookings = Booking::with(['listing', 'listing.host'])
+                ->where('user_id', Auth::id())
+                ->orderBy('created_at', 'desc')
+                ->get()
+                ->map(function ($booking) {
+                    return [
+                        'id' => $booking->id,
+                        'listing' => $booking->listing,
+                        'start_date' => $booking->start_date,
+                        'end_date' => $booking->end_date,
+                        'total_price' => $booking->total_price,
+                        'payment_status' => $booking->payment_status,
+                        'host' => $booking->listing->host,
+                        'created_at' => $booking->created_at
+                    ];
+                });
 
-        return response()->json($bookings);
+            return response()->json([
+                'message' => 'Bookings retrieved successfully',
+                'data' => $bookings
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error retrieving bookings: ' . $e->getMessage());
+            return response()->json([
+                'message' => 'Failed to retrieve bookings',
+                'error' => $e->getMessage()
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
     }
 
     /**
@@ -28,30 +52,41 @@ class BookingController extends Controller
      */
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'listing_id' => 'required|exists:listings,id',
-            'start_date' => 'required|date|after:today',
-            'end_date' => 'required|date|after:start_date',
-        ]);
+        try {
+            $validated = $request->validate([
+                'listing_id' => 'required|exists:listings,id',
+                'start_date' => 'required|date|after:today',
+                'end_date' => 'required|date|after:start_date',
+            ]);
 
-        $listing = Listing::findOrFail($validated['listing_id']);
-        
-        // Calculate total price based on days
-        $start = new \DateTime($validated['start_date']);
-        $end = new \DateTime($validated['end_date']);
-        $days = $start->diff($end)->days;
-        $total_price = $listing->price * $days;
+            $listing = Listing::findOrFail($validated['listing_id']);
+            
+            // Calculate total price based on days
+            $start = new \DateTime($validated['start_date']);
+            $end = new \DateTime($validated['end_date']);
+            $days = $start->diff($end)->days;
+            $total_price = $listing->price * $days;
 
-        $booking = Booking::create([
-            'user_id' => Auth::id(),
-            'listing_id' => $validated['listing_id'],
-            'start_date' => $validated['start_date'],
-            'end_date' => $validated['end_date'],
-            'total_price' => $total_price,
-            'payment_status' => 'pending'
-        ]);
+            $booking = Booking::create([
+                'user_id' => Auth::id(),
+                'listing_id' => $validated['listing_id'],
+                'start_date' => $validated['start_date'],
+                'end_date' => $validated['end_date'],
+                'total_price' => $total_price,
+                'payment_status' => 'pending'
+            ]);
 
-        return response()->json($booking->load('listing'), Response::HTTP_CREATED);
+            return response()->json([
+                'message' => 'Booking created successfully',
+                'booking' => $booking->load('listing')
+            ], Response::HTTP_CREATED);
+        } catch (\Exception $e) {
+            Log::error('Booking creation failed: ' . $e->getMessage());
+            return response()->json([
+                'message' => 'Failed to create booking',
+                'error' => $e->getMessage()
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
     }
 
     /**
@@ -125,5 +160,98 @@ class BookingController extends Controller
         ->paginate(10);
 
         return response()->json($bookings);
+    }
+
+    /**
+     * Accept a booking.
+     */
+    public function acceptBooking(Booking $booking)
+    {
+        try {
+            // Check if user is the host of the listing
+            if ($booking->listing->host_id !== Auth::id()) {
+                return response()->json(['message' => 'Unauthorized'], Response::HTTP_FORBIDDEN);
+            }
+
+            // Check if booking is in pending payment status
+            if ($booking->payment_status !== 'pending') {
+                return response()->json([
+                    'message' => 'Can only accept bookings with pending payment status'
+                ], Response::HTTP_BAD_REQUEST);
+            }
+
+            $booking->payment_status = 'completed';
+            $booking->save();
+
+            return response()->json([
+                'message' => 'Booking accepted successfully',
+                'booking' => $booking->load(['listing', 'user'])
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error accepting booking: ' . $e->getMessage());
+            return response()->json([
+                'message' => 'Failed to accept booking',
+                'error' => $e->getMessage()
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * Refuse a booking.
+     */
+    public function refuseBooking(Booking $booking)
+    {
+        try {
+            // Check if user is the host of the listing
+            if ($booking->listing->host_id !== Auth::id()) {
+                return response()->json(['message' => 'Unauthorized'], Response::HTTP_FORBIDDEN);
+            }
+
+            // Check if booking is in pending payment status
+            if ($booking->payment_status !== 'pending') {
+                return response()->json([
+                    'message' => 'Can only refuse bookings with pending payment status'
+                ], Response::HTTP_BAD_REQUEST);
+            }
+
+            $booking->payment_status = 'cancelled';
+            $booking->save();
+
+            return response()->json([
+                'message' => 'Booking refused successfully',
+                'booking' => $booking->load(['listing', 'user'])
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error refusing booking: ' . $e->getMessage());
+            return response()->json([
+                'message' => 'Failed to refuse booking',
+                'error' => $e->getMessage()
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    /**
+     * Check if the authenticated user has a completed payment for a listing
+     */
+    public function checkBookingStatus($listingId)
+    {
+        try {
+            $userId = Auth::id();
+            
+            $hasCompletedPayment = Booking::where('user_id', $userId)
+                ->where('listing_id', $listingId)
+                ->where('payment_status', 'completed')
+                ->exists();
+
+            return response()->json([
+                'success' => true,
+                'hasCompletedPayment' => $hasCompletedPayment
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error checking booking status: ' . $e->getMessage()
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
     }
 } 

@@ -18,6 +18,11 @@ const EditListing = () => {
   });
   const [mainPhoto, setMainPhoto] = useState(null);
   const [mainPhotoPreview, setMainPhotoPreview] = useState(null);
+  const [additionalPhotos, setAdditionalPhotos] = useState([]);
+  const [previews, setPreviews] = useState({
+    main: null,
+    additional: []
+  });
   const navigate = useNavigate();
 
   const categories = [
@@ -49,7 +54,17 @@ const EditListing = () => {
           price: listingData.price,
           category: listingData.category
         });
-        setMainPhotoPreview(`http://localhost:8000/storage/${listingData.main_photo}`);
+        setMainPhotoPreview(getImageUrl(listingData.main_photo));
+        
+        // Set additional photos previews if they exist
+        if (listingData.photos && listingData.photos.length > 0) {
+          setPreviews(prev => ({
+            ...prev,
+            additional: listingData.photos.map(photo => 
+              getImageUrl(photo.photo_path)
+            )
+          }));
+        }
       }
     } catch (error) {
       setError(error.response?.data?.message || 'Failed to fetch listing');
@@ -79,6 +94,30 @@ const EditListing = () => {
     }
   };
 
+  const handleAdditionalPhotosChange = (e) => {
+    const files = Array.from(e.target.files).slice(0, 3); // Limit to 3 additional photos
+    const oversizedFiles = files.filter(file => file.size > 5 * 1024 * 1024);
+    
+    if (oversizedFiles.length > 0) {
+      setError('All photos must be less than 5MB');
+      return;
+    }
+
+    setAdditionalPhotos(files);
+    
+    const newPreviews = [];
+    files.forEach(file => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        newPreviews.push(reader.result);
+        if (newPreviews.length === files.length) {
+          setPreviews(prev => ({ ...prev, additional: newPreviews }));
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -94,6 +133,13 @@ const EditListing = () => {
 
       if (mainPhoto) {
         updateData.append('main_photo', mainPhoto);
+      }
+
+      // Append additional photos if any
+      if (additionalPhotos.length > 0) {
+        additionalPhotos.forEach(photo => {
+          updateData.append('photos[]', photo);
+        });
       }
 
       const response = await axios.post(
@@ -114,6 +160,27 @@ const EditListing = () => {
       setError(error.response?.data?.message || 'Failed to update listing');
       setLoading(false);
     }
+  };
+
+  const getImageUrl = (imageUrl) => {
+    if (!imageUrl) return 'https://via.placeholder.com/300x200?text=No+Image';
+    
+    // If it's already a full URL
+    if (imageUrl.startsWith('http')) {
+      return imageUrl;
+    }
+    
+    // For storage paths
+    if (imageUrl.includes('storage/') || imageUrl.startsWith('listings/')) {
+      const cleanPath = imageUrl
+        .replace('storage/', '')  // Remove 'storage/' if present
+        .replace(/^\/+/, '');     // Remove leading slashes
+      return `http://localhost:8000/storage/${cleanPath}`;
+    }
+    
+    // For any other case, assume it's a relative path in storage
+    const cleanPath = imageUrl.replace(/^\/+/, '');
+    return `http://localhost:8000/storage/${cleanPath}`;
   };
 
   if (loading) return <LoadingSpinner />;
@@ -205,6 +272,33 @@ const EditListing = () => {
                     />
                   )}
                 </div>
+
+                <div className="additional-photos-upload">
+                  <h3>Additional Photos (Optional)</h3>
+                  <p className="photo-hint">Max 3 photos, 5MB each</p>
+                  <input 
+                    type="file" 
+                    accept="image/jpeg,image/png,image/jpg" 
+                    multiple 
+                    onChange={handleAdditionalPhotosChange} 
+                    className="file-input"
+                  />
+                  <div className="additional-previews">
+                    {previews.additional.map((preview, index) => (
+                      <div key={index} className="photo-preview-container">
+                        <img 
+                          src={preview}
+                          alt={`Additional ${index + 1}`} 
+                          className="additional-preview"
+                          onError={(e) => {
+                            e.target.onerror = null;
+                            e.target.src = 'https://via.placeholder.com/150x150?text=No+Image';
+                          }}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -220,6 +314,8 @@ const EditListing = () => {
           display: flex;
           min-height: 100vh;
           background: #f8f9fa;
+          position: relative;
+          left: -250px;
         }
 
         .edit-listing-container {
@@ -281,28 +377,44 @@ const EditListing = () => {
         }
 
         .photo-upload-section {
-          background: #f9f9f9;
+          background: white;
           padding: 1.5rem;
-          border-radius: 8px;
+          border-radius: 12px;
+          box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .main-photo-upload,
+        .additional-photos-upload {
+          margin-bottom: 2rem;
+        }
+
+        .main-photo-upload h3,
+        .additional-photos-upload h3 {
+          margin-bottom: 1rem;
+          color: #2c3e50;
+          font-size: 1.2rem;
+          font-weight: 600;
         }
 
         .photo-hint {
           font-size: 0.9rem;
           color: #666;
-          margin-bottom: 0.5rem;
-        }
-
-        .main-photo-upload {
-          margin-bottom: 1.5rem;
-        }
-
-        .main-photo-upload h3 {
           margin-bottom: 1rem;
-          color: #2c3e50;
         }
 
         .file-input {
+          width: 100%;
+          padding: 0.75rem;
           margin-bottom: 1rem;
+          border: 2px dashed #ddd;
+          border-radius: 8px;
+          cursor: pointer;
+          transition: all 0.3s ease;
+        }
+
+        .file-input:hover {
+          border-color: #007bff;
+          background: rgba(0,123,255,0.05);
         }
 
         .main-preview {
@@ -312,6 +424,39 @@ const EditListing = () => {
           border-radius: 8px;
           margin-top: 1rem;
           box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+          transition: transform 0.3s ease;
+        }
+
+        .main-preview:hover {
+          transform: scale(1.02);
+        }
+
+        .additional-previews {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 1rem;
+          margin-top: 1rem;
+        }
+
+        .photo-preview-container {
+          position: relative;
+          aspect-ratio: 1;
+          border-radius: 8px;
+          overflow: hidden;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+          transition: transform 0.3s ease;
+        }
+
+        .photo-preview-container:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .additional-preview {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          border-radius: 8px;
         }
 
         .cta-button {
@@ -359,6 +504,18 @@ const EditListing = () => {
 
           h1 {
             font-size: 1.75rem;
+          }
+
+          .additional-previews {
+            grid-template-columns: repeat(2, 1fr);
+          }
+
+          .main-preview {
+            height: 200px;
+          }
+
+          .photo-preview-container {
+            aspect-ratio: 3/2;
           }
         }
       `}</style>

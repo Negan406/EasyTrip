@@ -15,16 +15,36 @@ class ReviewController extends Controller
      */
     public function index(Request $request)
     {
-        $request->validate([
-            'listing_id' => 'required|exists:listings,id'
-        ]);
+        try {
+            $request->validate([
+                'listing_id' => 'required|exists:listings,id'
+            ]);
 
-        $reviews = Review::with('user')
-            ->where('listing_id', $request->listing_id)
-            ->latest()
-            ->paginate(10);
+            $query = Review::with('user')
+                ->where('listing_id', $request->listing_id);
+            
+            // If user_id is provided, filter by it
+            if ($request->has('user_id')) {
+                $query->where('user_id', $request->user_id);
+            }
 
-        return response()->json($reviews);
+            $reviews = $query->latest()->paginate(10);
+
+            return response()->json([
+                'success' => true,
+                'data' => $reviews->items(),
+                'meta' => [
+                    'total' => $reviews->total(),
+                    'current_page' => $reviews->currentPage(),
+                    'last_page' => $reviews->lastPage(),
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error retrieving reviews: ' . $e->getMessage()
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
     }
 
     /**
@@ -32,43 +52,47 @@ class ReviewController extends Controller
      */
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'listing_id' => 'required|exists:listings,id',
-            'rating' => 'required|integer|min:1|max:5',
-            'comment' => 'required|string|max:1000',
-        ]);
+        try {
+            $validated = $request->validate([
+                'listing_id' => 'required|exists:listings,id',
+                'rating' => 'required|integer|min:1|max:5',
+                'comment' => 'required|string|max:1000',
+            ]);
 
-        // Check if user has booked and completed their stay
-        $hasValidBooking = Booking::where('user_id', Auth::id())
-            ->where('listing_id', $validated['listing_id'])
-            ->where('end_date', '<', now())
-            ->exists();
+            // Check if user has already reviewed
+            $hasReviewed = Review::where('user_id', Auth::id())
+                ->where('listing_id', $validated['listing_id'])
+                ->exists();
 
-        if (!$hasValidBooking) {
-            return response()->json(
-                ['message' => 'You can only review after completing your stay'],
-                Response::HTTP_FORBIDDEN
-            );
+            if ($hasReviewed) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'You have already reviewed this listing'
+                ], Response::HTTP_FORBIDDEN);
+            }
+
+            $review = Review::create([
+                'user_id' => Auth::id(),
+                'listing_id' => $validated['listing_id'],
+                'rating' => $validated['rating'],
+                'comment' => $validated['comment']
+            ]);
+
+            // Load the user relationship for the response
+            $review->load('user');
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Review submitted successfully',
+                'data' => $review
+            ], Response::HTTP_CREATED);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to submit review: ' . $e->getMessage()
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
-
-        // Check if user has already reviewed
-        $hasReviewed = Review::where('user_id', Auth::id())
-            ->where('listing_id', $validated['listing_id'])
-            ->exists();
-
-        if ($hasReviewed) {
-            return response()->json(
-                ['message' => 'You have already reviewed this listing'],
-                Response::HTTP_FORBIDDEN
-            );
-        }
-
-        $review = Review::create([
-            'user_id' => Auth::id(),
-            ...$validated
-        ]);
-
-        return response()->json($review->load('user'), Response::HTTP_CREATED);
     }
 
     /**

@@ -81,7 +81,7 @@ const ManageListings = () => {
                   onClick={() => setNotification(null)}
                 >
                   ×
-                </button>
+                </button> 
               </div>
             )}
 
@@ -162,6 +162,8 @@ const ManageListings = () => {
         .app-container {
           display: flex;
           min-height: 100vh;
+          position: relative;
+          left: -100px;
         }
 
         .page-container {
@@ -181,6 +183,8 @@ const ManageListings = () => {
           color: #2c3e50;
           margin-bottom: 2rem;
           font-size: 2rem;
+          position: relative;
+          
         }
 
         .notification {

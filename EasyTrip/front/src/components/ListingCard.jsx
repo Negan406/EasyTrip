@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faHeart, faTag } from "@fortawesome/free-solid-svg-icons";
-import { faHeart as faRegularHeart } from "@fortawesome/free-regular-svg-icons";
+import { faHeart, faTag, faStar as fasStar } from "@fortawesome/free-solid-svg-icons";
+import { faHeart as faRegularHeart, faStar as farStar } from "@fortawesome/free-regular-svg-icons";
 import PropTypes from 'prop-types';
 import { Link, useNavigate } from "react-router-dom";
 import Notification from './Notification';
@@ -154,6 +154,22 @@ const ListingCard = ({ listing, onRemoveFromWishlist, isInWishlist = false }) =>
     return `http://localhost:8000/storage/${cleanPath}`;
   };
 
+  const renderStars = (rating) => {
+    const stars = [];
+    const roundedRating = Math.round(rating * 2) / 2; // Round to nearest 0.5
+
+    for (let i = 1; i <= 5; i++) {
+      if (i <= roundedRating) {
+        stars.push(<FontAwesomeIcon key={i} icon={fasStar} className="star filled" />);
+      } else if (i - 0.5 === roundedRating) {
+        stars.push(<FontAwesomeIcon key={i} icon={fasStar} className="star half-filled" />);
+      } else {
+        stars.push(<FontAwesomeIcon key={i} icon={farStar} className="star" />);
+      }
+    }
+    return stars;
+  };
+
   return (
     <>
       {notification && (
@@ -204,6 +220,22 @@ const ListingCard = ({ listing, onRemoveFromWishlist, isInWishlist = false }) =>
               <span>{formatCategory(listing.category)}</span>
             </div>
           )}
+          <div className="rating-container">
+            <div className="rating-display">
+              <FontAwesomeIcon icon={fasStar} className="rating-icon" />
+              <span className="rating-number">{listing.rating > 0 ? parseFloat(listing.rating).toFixed(1) : 'New'}</span>
+            </div>
+            <div className="stars">
+              {renderStars(listing.rating || 0)}
+            </div>
+            <span className="rating-text">
+              {listing.total_ratings > 0 ? (
+                <span className="rating-count">({listing.total_ratings} {listing.total_ratings === 1 ? 'review' : 'reviews'})</span>
+              ) : (
+                <span className="no-ratings">No reviews yet</span>
+              )}
+            </span>
+          </div>
         </div>
         <div className="listing-info">
           <div className="listing-title">
@@ -225,15 +257,19 @@ const ListingCard = ({ listing, onRemoveFromWishlist, isInWishlist = false }) =>
           background: white;
           border-radius: 12px;
           overflow: hidden;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-          transition: all 0.3s ease;
+          box-shadow: rgba(0, 0, 0, 0.1) 0px 4px 12px, 
+                      rgba(0, 0, 0, 0.05) 0px 1px 3px;
+          transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
           height: 100%;
           margin-bottom: 20px;
+        
         }
 
         .listing-card:hover {
           transform: translateY(-6px);
-          box-shadow: 0 12px 20px rgba(0,0,0,0.15);
+          box-shadow: rgba(0, 0, 0, 0.16) 0px 10px 36px 0px,
+                      rgba(0, 0, 0, 0.06) 0px 0px 0px 1px,
+                      rgba(0, 0, 0, 0.07) 0px 20px 30px -10px;
         }
 
         .listing-image {
@@ -312,8 +348,10 @@ const ListingCard = ({ listing, onRemoveFromWishlist, isInWishlist = false }) =>
           justify-content: center;
           cursor: pointer;
           transition: all 0.3s ease;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+          box-shadow: rgba(0, 0, 0, 0.1) 0px 4px 12px,
+                      rgba(0, 0, 0, 0.1) 0px 1px 3px;
           z-index: 2;
+          color: #222;
         }
 
         .favorite.active {
@@ -339,7 +377,8 @@ const ListingCard = ({ listing, onRemoveFromWishlist, isInWishlist = false }) =>
           display: flex;
           align-items: center;
           gap: 6px;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+          box-shadow: rgba(0, 0, 0, 0.1) 0px 4px 12px,
+                      rgba(0, 0, 0, 0.1) 0px 1px 3px;
           z-index: 2;
           backdrop-filter: blur(4px);
         }
@@ -347,6 +386,13 @@ const ListingCard = ({ listing, onRemoveFromWishlist, isInWishlist = false }) =>
         .listing-info {
           padding: 20px;
           background: white;
+        }
+
+        .listing-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          margin-bottom: 8px;
         }
 
         .listing-title h3 {
@@ -397,6 +443,69 @@ const ListingCard = ({ listing, onRemoveFromWishlist, isInWishlist = false }) =>
           overflow: hidden;
         }
 
+        .rating-container {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          margin: 8px 0;
+          flex-wrap: wrap;
+        }
+
+        .rating-display {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          background: #2c3e50;
+          padding: 4px 8px;
+          border-radius: 6px;
+          color: white;
+        }
+
+        .rating-icon {
+          color: #ffd700;
+          font-size: 1rem;
+        }
+
+        .rating-number {
+          font-weight: 600;
+          font-size: 1rem;
+        }
+
+        .stars {
+          display: flex;
+          gap: 2px;
+        }
+
+        .star {
+          color: #ddd;
+          font-size: 1rem;
+          transition: color 0.2s ease;
+        }
+
+        .star.filled {
+          color: #ffd700;
+        }
+
+        .star.half-filled {
+          position: relative;
+          color: #ffd700;
+          opacity: 0.5;
+        }
+
+        .rating-text {
+          color: #666;
+          font-size: 0.9rem;
+        }
+
+        .rating-count {
+          color: #666;
+        }
+
+        .no-ratings {
+          color: #999;
+          font-style: italic;
+        }
+
         @media (max-width: 768px) {
           .listing-card {
             margin-bottom: 15px;
@@ -433,7 +542,9 @@ ListingCard.propTypes = {
     main_photo: PropTypes.string,
     description: PropTypes.string,
     category: PropTypes.string,
-    wishlist_id: PropTypes.number
+    wishlist_id: PropTypes.number,
+    rating: PropTypes.number,
+    total_ratings: PropTypes.number
   }).isRequired,
   onRemoveFromWishlist: PropTypes.func,
   isInWishlist: PropTypes.bool

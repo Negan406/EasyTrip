@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import Notification from "../components/Notification";
+import axios from "axios";
 
 const Payment = () => {
   const [paymentDetails, setPaymentDetails] = useState({
@@ -12,70 +13,82 @@ const Payment = () => {
   const [guestName, setGuestName] = useState('');
   const [guestCount, setGuestCount] = useState(1);
   const [notification, setNotification] = useState(null);
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
-  const { listing, startDate, endDate } = location.state || {};
-  const [paymentSuccess, setPaymentSuccess] = useState(false);
+  const { listing, booking } = location.state || {};
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setPaymentDetails({ ...paymentDetails, [name]: value });
   };
 
-  const handlePaymentSubmit = (e) => {
+  const handlePaymentSubmit = async (e) => {
     e.preventDefault();
     
     // Check if user is logged in
-    const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
-    const userEmail = localStorage.getItem('email');
-    
-    if (!isLoggedIn) {
+    const token = localStorage.getItem('authToken');
+    if (!token) {
       setNotification({ message: 'You must be logged in to complete payment.', type: 'error' });
       return;
     }
 
-    // Show success notification
-    setNotification({ message: 'Payment successful!', type: 'success' });
-    setPaymentSuccess(true);
+    // Validate dates
+    const startDate = new Date(booking.startDate);
+    const endDate = new Date(booking.endDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
-    // Save booking details
-    const booking = { 
-      id: Date.now(), 
-      listing: {
-        id: listing.id,
-        title: listing.title,
-        location: listing.location,
-        price: listing.price,
-        mainPhoto: listing.mainPhoto || listing.photo
-      },
-      startDate, 
-      endDate, 
-      guestName, 
-      guestCount,
-      userEmail,
-      paymentStatus: 'completed',  // Mark payment as completed
-      status: 'confirmed'  // Update status to confirmed
-    };
+    if (startDate < today) {
+      setNotification({ message: 'Check-in date cannot be in the past.', type: 'error' });
+      return;
+    }
+
+    if (endDate <= startDate) {
+      setNotification({ message: 'Check-out date must be after check-in date.', type: 'error' });
+      return;
+    }
+
+    setLoading(true);
 
     try {
-      const trips = JSON.parse(localStorage.getItem('trips')) || [];
-      trips.push(booking);
-      localStorage.setItem('trips', JSON.stringify(trips));
+      // Configure axios with the auth token
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
 
-      const bookings = JSON.parse(localStorage.getItem('bookings')) || [];
-      bookings.push(booking);
-      localStorage.setItem('bookings', JSON.stringify(bookings));
+      // Format dates to match backend expectations (YYYY-MM-DD)
+      const formattedStartDate = booking.startDate.split('T')[0];
+      const formattedEndDate = booking.endDate.split('T')[0];
 
-      // Redirect back to the listing page after payment
-      setTimeout(() => {
-        navigate(`/listing/${listing.id}`);
-      }, 2000);
-    } catch (error) {
-      if (error.name === 'QuotaExceededError') {
-        alert('Storage limit exceeded. Please clear some data.');
-      } else {
-        console.error('Failed to update trips or bookings:', error);
+      // Create the booking
+      const response = await axios.post('http://localhost:8000/api/bookings', {
+        listing_id: listing.id,
+        start_date: formattedStartDate,
+        end_date: formattedEndDate
+      });
+
+      if (response.data) {
+        setNotification({ 
+          message: response.data.message || 'Booking successful!', 
+          type: 'success' 
+        });
+        
+        // Redirect back to the listing page after successful booking
+        setTimeout(() => {
+          navigate(`/listing/${listing.id}`);
+        }, 2000);
       }
+    } catch (error) {
+      console.error('Booking error:', error);
+      const errorMessage = error.response?.data?.message 
+        || error.response?.data?.error 
+        || 'Failed to create booking. Please try again.';
+      
+      setNotification({ 
+        message: errorMessage,
+        type: 'error' 
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -83,10 +96,10 @@ const Payment = () => {
     setNotification(null);
   };
 
-  if (!listing) {
+  if (!listing || !booking) {
     return (
       <div className="payment-container">
-        <h1>Error: Listing information not found</h1>
+        <h1>Error: Booking information not found</h1>
         <p>Please go back and try again.</p>
         <button onClick={() => navigate(-1)} className="cta-button">Go Back</button>
       </div>
@@ -105,7 +118,7 @@ const Payment = () => {
       <h1>Payment for {listing.title}</h1>
       <p>Location: {listing.location}</p>
       <p>Price: ${listing.price} per night</p>
-      <p>From: {startDate} To: {endDate}</p>
+      <p>From: {booking.startDate} To: {booking.endDate}</p>
       <form onSubmit={handlePaymentSubmit} className="payment-form">
         <input
           type="text"
@@ -156,9 +169,10 @@ const Payment = () => {
           onChange={handleInputChange}
           required
         />
-        <button type="submit" className="cta-button">Pay Now</button>
+        <button type="submit" className="cta-button" disabled={loading}>
+          {loading ? 'Processing...' : 'Pay Now'}
+        </button>
       </form>
-      {paymentSuccess && <p>Payment successful! Redirecting to listing page...</p>}
     
       <style>{`
         .payment-container {
@@ -194,8 +208,13 @@ const Payment = () => {
           transition: background 0.3s ease;
         }
         
-        .cta-button:hover {
+        .cta-button:hover:not(:disabled) {
           background: #0056b3;
+        }
+
+        .cta-button:disabled {
+          background: #ccc;
+          cursor: not-allowed;
         }
       `}</style>
     </div>

@@ -1,8 +1,7 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
 import Comments from "../components/Comments";
-import LoadingSpinner from "../components/LoadingSpinner";
 import Notification from "../components/Notification";
 import axios from "axios";
 
@@ -80,7 +79,10 @@ const ListingDetails = () => {
           type: 'error'
         });
       } finally {
-        setLoading(false);
+        // Add a small delay to ensure the spinner is visible
+        setTimeout(() => {
+          setLoading(false);
+        }, 200); // Increased delay for better visibility
       }
     };
 
@@ -104,14 +106,35 @@ const ListingDetails = () => {
   const handleBookNow = async (e) => {
     e.preventDefault();
     
-    const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
-    if (!isLoggedIn) {
+    const token = localStorage.getItem('authToken');
+    if (!token) {
       setNotification({ message: 'Please log in to book this listing.', type: 'error' });
       return;
     }
 
     if (isAlreadyBooked) {
       setNotification({ message: 'This listing is already booked by you.', type: 'error' });
+      return;
+    }
+
+    if (!startDate || !endDate) {
+      setNotification({ message: 'Please select both check-in and check-out dates.', type: 'error' });
+      return;
+    }
+
+    // Validate dates
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (start < today) {
+      setNotification({ message: 'Check-in date cannot be in the past.', type: 'error' });
+      return;
+    }
+
+    if (end <= start) {
+      setNotification({ message: 'Check-out date must be after check-in date.', type: 'error' });
       return;
     }
 
@@ -134,18 +157,16 @@ const ListingDetails = () => {
     setSelectedPhoto(photo);
   };
 
-  if (loading) return <LoadingSpinner />;
-  if (!listing) return <div>Listing not found</div>;
-
   // Create array of unique photos with proper URLs
-  const allPhotos = Array.from(new Set([
+  const allPhotos = listing ? Array.from(new Set([
     getImageUrl(listing.mainPhoto),
     ...listing.photos.map(photo => getImageUrl(photo))
-  ])).filter(Boolean);
+  ])).filter(Boolean) : [];
 
   return (
-    <div className="listing-details-container">
+    <div className="page-wrapper">
       <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
+      
       {notification && (
         <Notification
           message={notification.message}
@@ -153,139 +174,393 @@ const ListingDetails = () => {
           onClose={closeNotification}
         />
       )}
-      <main className="listing-details-page">
-        <div className="listing-gallery">
-          <div className="main-image">
-            <img 
-              src={selectedPhoto || getImageUrl(listing.mainPhoto)} 
-              alt={listing.title}
-              onError={(e) => {
-                console.error('Image failed to load:', {
-                  original: listing.mainPhoto,
-                  attempted: e.target.src
-                });
-                e.target.onerror = null;
-                e.target.src = 'https://via.placeholder.com/800x600?text=No+Image+Available';
-              }}
-            />
-          </div>
-          {allPhotos.length > 1 && (
-            <div className="photo-grid">
-              {allPhotos.map((photo, index) => (
-                <div 
-                  key={index} 
-                  className={`photo-thumbnail ${selectedPhoto === photo ? 'selected' : ''}`}
-                  onClick={() => handlePhotoClick(photo)}
-                >
-                  <img 
-                    src={photo} 
-                    alt={`${listing.title} - ${index + 1}`}
-                    onError={(e) => {
-                      console.error('Thumbnail failed to load:', {
-                        photo,
-                        index
-                      });
-                      e.target.onerror = null;
-                      e.target.src = 'https://via.placeholder.com/150x150?text=Image+Not+Found';
-                    }}
-                  />
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <div className="listing-content">
-          <div className="listing-info-container">
-            <div className="listing-header">
-              <h1>{listing.title}</h1>
-              <div className="listing-meta">
-                <div className="location">
-                  <i className="fas fa-map-marker-alt"></i> {listing.location}
-                </div>
-                <div className="category">
-                  Category: {listing.category}
+      
+      <div className="content-area">
+        {loading ? (
+          <div className="loading-container">
+            <div className="spinner-wrapper">
+              <div className="custom-spinner">
+                <div className="spinner-ring"></div>
+                <div className="spinner-icon">
+                  <i className="fas fa-home"></i>
                 </div>
               </div>
-            </div>
-
-            {listing.host && (
-              <div className="host-info">
-                <div className="host-photo-container">
-                  <img 
-                    src={getImageUrl(listing.host.profile_photo)} 
-                    alt={listing.host.name} 
-                    className="host-avatar"
-                    onError={(e) => {
-                      console.error('Host photo failed to load:', {
-                        original: listing.host.profile_photo,
-                        attempted: e.target.src
-                      });
-                      e.target.src = 'https://via.placeholder.com/150x150?text=Host';
-                    }}
-                  />
-                </div>
-                <div className="host-details">
-                  <h3>Hosted by {listing.host.name}</h3>
-                  {listing.host.bio && <p>{listing.host.bio}</p>}
-                  {listing.host.phone && (
-                    <p className="host-contact">
-                      <i className="fas fa-phone"></i> {listing.host.phone}
-                    </p>
-                  )}
-                </div>
+              <h3 className="loading-title">Loading your perfect getaway...</h3>
+              <p className="loading-text">We&apos;re preparing all the details for this listing</p>
+              <div className="loading-progress">
+                <div className="progress-bar"></div>
               </div>
-            )}
-
-            <div className="listing-description">
-              <p>{listing.description}</p>
-            </div>
-
-            <div className="reviews-section">
-              <Comments 
-                listingId={id.toString()} 
-                userName={localStorage.getItem('userName')}
-                isLoggedIn={localStorage.getItem('isLoggedIn') === 'true'}
-              />
             </div>
           </div>
-
-          <div className="booking-card">
-            <div className="booking-price">
-              <h2>${listing.price} <span className="per-night">night</span></h2>
+        ) : !listing ? (
+          <div className="not-found-container">
+            <div className="error-content">
+              <h2>Listing not found</h2>
+              <p>The listing you&apos;re looking for doesn&apos;t exist or has been removed.</p>
+              <Link to="/" className="back-link">Return to homepage</Link>
             </div>
-            <form className="booking-form" onSubmit={handleBookNow}>
-              <div className="date-inputs">
-                <input 
-                  type="date" 
-                  placeholder="Check-in" 
-                  value={startDate} 
-                  onChange={(e) => setStartDate(e.target.value)} 
-                  required 
-                />
-                <input 
-                  type="date" 
-                  placeholder="Check-out" 
-                  value={endDate} 
-                  onChange={(e) => setEndDate(e.target.value)} 
-                  required 
+          </div>
+        ) : (
+          <main className="listing-details-page">
+            <div className="listing-gallery">
+              <div className="main-image">
+                <img 
+                  src={selectedPhoto || getImageUrl(listing.mainPhoto)} 
+                  alt={listing.title}
+                  onError={(e) => {
+                    console.error('Image failed to load:', {
+                      original: listing.mainPhoto,
+                      attempted: e.target.src
+                    });
+                    e.target.onerror = null;
+                    e.target.src = 'https://via.placeholder.com/800x600?text=No+Image+Available';
+                  }}
                 />
               </div>
-              <input type="number" min="1" max="16" placeholder="Guests" required />
-              <button 
-                type="submit" 
-                className="book-button" 
-                disabled={isAlreadyBooked}
-              >
-                {isAlreadyBooked ? 'Already Booked' : 'Book now'}
-              </button>
-            </form>
-          </div>
+              {allPhotos.length > 1 && (
+                <div className="photo-grid">
+                  {allPhotos.map((photo, index) => (
+                    <div 
+                      key={index} 
+                      className={`photo-thumbnail ${selectedPhoto === photo ? 'selected' : ''}`}
+                      onClick={() => handlePhotoClick(photo)}
+                    >
+                      <img 
+                        src={photo} 
+                        alt={`${listing.title} - ${index + 1}`}
+                        onError={(e) => {
+                          console.error('Thumbnail failed to load:', {
+                            photo,
+                            index
+                          });
+                          e.target.onerror = null;
+                          e.target.src = 'https://via.placeholder.com/150x150?text=Image+Not+Found';
+                        }}
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="listing-content">
+              <div className="listing-info-container">
+                <div className="listing-header">
+                  <h1>{listing.title}</h1>
+                  <div className="listing-meta">
+                    <div className="location">
+                      <i className="fas fa-map-marker-alt"></i> {listing.location}
+                    </div>
+                    <div className="category">
+                      Category: {listing.category}
+                    </div>
+                  </div>
+                </div>
+
+                {listing.host && (
+                  <div className="host-info">
+                    <div className="host-photo-container">
+                      <img 
+                        src={getImageUrl(listing.host.profile_photo)} 
+                        alt={listing.host.name} 
+                        className="host-avatar"
+                        onError={(e) => {
+                          console.error('Host photo failed to load:', {
+                            original: listing.host.profile_photo,
+                            attempted: e.target.src
+                          });
+                          e.target.src = 'https://via.placeholder.com/150x150?text=Host';
+                        }}
+                      />
+                    </div>
+                    <div className="host-details">
+                      <h3>Hosted by {listing.host.name}</h3>
+                      {listing.host.bio && <p>{listing.host.bio}</p>}
+                      {listing.host.phone && (
+                        <p className="host-contact">
+                          <i className="fas fa-phone"></i> {listing.host.phone}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                <div className="listing-description">
+                  <p>{listing.description}</p>
+                </div>
+
+                <div className="reviews-section">
+                  <Comments 
+                    listingId={id.toString()} 
+                    userName={localStorage.getItem('userName')}
+                    isLoggedIn={localStorage.getItem('isLoggedIn') === 'true'}
+                  />
+                </div>
+              </div>
+
+              <div className="booking-card">
+                <div className="booking-price">
+                  <h2>${listing.price} <span className="per-night">night</span></h2>
+                </div>
+                <form className="booking-form" onSubmit={handleBookNow}>
+                  <div className="date-inputs">
+                    <input 
+                      type="date" 
+                      placeholder="Check-in" 
+                      value={startDate} 
+                      onChange={(e) => setStartDate(e.target.value)} 
+                      required 
+                    />
+                    <input 
+                      type="date" 
+                      placeholder="Check-out" 
+                      value={endDate} 
+                      onChange={(e) => setEndDate(e.target.value)} 
+                      required 
+                    />
+                  </div>
+                  <input type="number" min="1" max="16" placeholder="Guests" required />
+                  <button 
+                    type="submit" 
+                    className="book-button" 
+                    disabled={isAlreadyBooked}
+                  >
+                    {isAlreadyBooked ? 'Already Booked' : 'Book now'}
+                  </button>
+                </form>
+              </div>
+            </div>
+          </main>
+        )}
+      </div>
+
+      <footer className="footer">
+        <div className="footer-content">
+          <p>&copy; {new Date().getFullYear()} EasyTrip. All rights reserved.</p>
         </div>
-      </main>
+      </footer>
 
       <style>{`
-        .listing-details-container {
+        .page-wrapper {
+          display: flex;
+          flex-direction: column;
+          min-height: 100vh;
+          position: relative;
+        }
+
+        .content-area {
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          width: 100%;
+        }
+
+        .loading-container {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          min-height: 70vh;
+          flex: 1;
+          background-color: #f8f9fa;
+        }
+
+        .spinner-wrapper {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          padding: 3rem;
+          background-color: white;
+          border-radius: 1rem;
+          box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+          max-width: 500px;
+          width: 90%;
+          text-align: center;
+          animation: fadeIn 0.5s ease;
+        }
+
+        .custom-spinner {
+          position: relative;
+          width: 100px;
+          height: 100px;
+          margin-bottom: 1.5rem;
+        }
+
+        .spinner-ring {
+          position: absolute;
+          width: 100%;
+          height: 100%;
+          border: 4px solid transparent;
+          border-top-color: #007bff;
+          border-radius: 50%;
+          animation: spin 1.5s linear infinite;
+        }
+
+        .spinner-ring:before {
+          content: '';
+          position: absolute;
+          top: 5px;
+          left: 5px;
+          right: 5px;
+          bottom: 5px;
+          border: 4px solid transparent;
+          border-top-color: #28a745;
+          border-radius: 50%;
+          animation: spin 3s linear infinite;
+        }
+
+        .spinner-ring:after {
+          content: '';
+          position: absolute;
+          top: 15px;
+          left: 15px;
+          right: 15px;
+          bottom: 15px;
+          border: 4px solid transparent;
+          border-top-color: #dc3545;
+          border-radius: 50%;
+          animation: spin 1.5s linear infinite reverse;
+        }
+
+        .spinner-icon {
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          font-size: 2rem;
+          color: #007bff;
+          animation: pulse 2s ease infinite;
+        }
+
+        .loading-title {
+          font-size: 1.5rem;
+          font-weight: 600;
+          color: #343a40;
+          margin: 0 0 0.5rem;
+        }
+
+        .loading-text {
+          margin: 0 0 1.5rem;
+          color: #6c757d;
+          font-size: 1rem;
+        }
+
+        .loading-progress {
+          width: 80%;
+          height: 6px;
+          background-color: #e9ecef;
+          border-radius: 3px;
+          overflow: hidden;
+          margin-top: 1rem;
+        }
+
+        .progress-bar {
+          height: 100%;
+          width: 0;
+          background: linear-gradient(to right, #007bff, #28a745);
+          border-radius: 3px;
+          animation: progress 2s ease infinite;
+        }
+
+        @keyframes spin {
+          0% {
+            transform: rotate(0deg);
+          }
+          100% {
+            transform: rotate(360deg);
+          }
+        }
+
+        @keyframes pulse {
+          0% {
+            opacity: 0.6;
+            transform: translate(-50%, -50%) scale(0.9);
+          }
+          50% {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1.1);
+          }
+          100% {
+            opacity: 0.6;
+            transform: translate(-50%, -50%) scale(0.9);
+          }
+        }
+
+        @keyframes progress {
+          0% {
+            width: 0%;
+          }
+          50% {
+            width: 70%;
+          }
+          100% {
+            width: 95%;
+          }
+        }
+
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        .error-content {
+          text-align: center;
+          padding: 2rem;
+          background-color: white;
+          border-radius: 8px;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .error-content h2 {
+          margin-bottom: 1rem;
+          color: #dc3545;
+        }
+
+        .error-content p {
+          margin-bottom: 1.5rem;
+          color: #6c757d;
+        }
+
+        .back-link {
+          display: inline-block;
+          padding: 0.75rem 1.5rem;
+          background-color: #007bff;
+          color: white;
+          text-decoration: none;
+          border-radius: 4px;
+          transition: all 0.3s ease;
+          font-weight: 500;
+        }
+
+        .back-link:hover {
+          background-color: #0056b3;
+          transform: translateY(-2px);
+          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .footer {
+          margin-top: auto;
+          background: #f8f9fa;
+          border-top: 1px solid #e9ecef;
+          padding: 20px 0;
+          width: 100%;
+          text-align: center;
+        }
+
+        .footer-content {
+          max-width: 1280px;
+          margin: 0 auto;
+          color: #6c757d;
+        }
+
+        .listing-details-page {
+          width: 100%;
           padding: 2rem;
           max-width: 1200px;
           margin: 0 auto;
