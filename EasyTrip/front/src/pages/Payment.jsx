@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import Notification from "../components/Notification";
 import axios from "axios";
@@ -14,9 +14,68 @@ const Payment = () => {
   const [guestCount, setGuestCount] = useState(1);
   const [notification, setNotification] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [checkingAvailability, setCheckingAvailability] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const { listing, booking } = location.state || {};
+
+  // Check availability when component mounts
+  useEffect(() => {
+    if (listing && booking) {
+      checkDateAvailability();
+    }
+  }, []);
+
+  const checkDateAvailability = async () => {
+    // Check if user is logged in
+    const token = localStorage.getItem('authToken');
+    if (!token) {
+      setNotification({ message: 'You must be logged in to complete payment.', type: 'error' });
+      return false;
+    }
+
+    setCheckingAvailability(true);
+
+    try {
+      // Format dates to match backend expectations (YYYY-MM-DD)
+      const formattedStartDate = booking.startDate.split('T')[0];
+      const formattedEndDate = booking.endDate.split('T')[0];
+
+      const response = await axios.post(
+        `http://localhost:8000/api/bookings/check-availability/${listing.id}`,
+        {
+          start_date: formattedStartDate,
+          end_date: formattedEndDate
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      if (!response.data.success || !response.data.is_available) {
+        setNotification({
+          message: 'These dates are no longer available. Please choose different dates.',
+          type: 'error'
+        });
+        
+        // Redirect back to the listing page after 3 seconds
+        setTimeout(() => {
+          navigate(`/listing/${listing.id}`);
+        }, 3000);
+        
+        return false;
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Availability check error:', error);
+      setNotification({
+        message: 'Error checking date availability. Please try again.',
+        type: 'error'
+      });
+      return false;
+    } finally {
+      setCheckingAvailability(false);
+    }
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -49,6 +108,12 @@ const Payment = () => {
       return;
     }
 
+    // Check if dates are still available
+    const isAvailable = await checkDateAvailability();
+    if (!isAvailable) {
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -66,7 +131,7 @@ const Payment = () => {
         end_date: formattedEndDate
       });
 
-      if (response.data) {
+      if (response.data && response.data.success) {
         setNotification({ 
           message: response.data.message || 'Booking successful!', 
           type: 'success' 
@@ -74,19 +139,41 @@ const Payment = () => {
         
         // Redirect back to the listing page after successful booking
         setTimeout(() => {
-          navigate(`/listing/${listing.id}`);
+          navigate(`/listing/${listing.id}`, { 
+            state: { 
+              bookingSuccess: true,
+              message: 'Booking completed successfully! We hope you enjoy your stay. Don\'t forget to leave a review after your visit.',
+              scrollToReviews: true
+            }
+          });
         }, 2000);
+      } else {
+        throw new Error(response.data.message || 'Booking failed');
       }
     } catch (error) {
       console.error('Booking error:', error);
-      const errorMessage = error.response?.data?.message 
-        || error.response?.data?.error 
-        || 'Failed to create booking. Please try again.';
       
-      setNotification({ 
-        message: errorMessage,
-        type: 'error' 
-      });
+      // Handle 409 Conflict (dates not available)
+      if (error.response && error.response.status === 409) {
+        setNotification({ 
+          message: 'These dates are no longer available. Please choose different dates.',
+          type: 'error' 
+        });
+        
+        // Redirect back to the listing page after 3 seconds
+        setTimeout(() => {
+          navigate(`/listing/${listing.id}`);
+        }, 3000);
+      } else {
+        const errorMessage = error.response?.data?.message 
+          || error.response?.data?.error 
+          || 'Failed to create booking. Please try again.';
+        
+        setNotification({ 
+          message: errorMessage,
+          type: 'error' 
+        });
+      }
     } finally {
       setLoading(false);
     }
@@ -119,60 +206,67 @@ const Payment = () => {
       <p>Location: {listing.location}</p>
       <p>Price: ${listing.price} per night</p>
       <p>From: {booking.startDate} To: {booking.endDate}</p>
-      <form onSubmit={handlePaymentSubmit} className="payment-form">
-        <input
-          type="text"
-          name="cardHolderName"
-          placeholder="Cardholder Name"
-          value={paymentDetails.cardHolderName}
-          onChange={handleInputChange}
-          required
-        />
-        <input
-          type="text"
-          name="guestName"
-          placeholder="Full Name"
-          value={guestName}
-          onChange={(e) => setGuestName(e.target.value)}
-          required
-        />
-        <input
-          type="number"
-          name="guestCount"
-          placeholder="Number of Guests"
-          value={guestCount}
-          onChange={(e) => setGuestCount(e.target.value)}
-          min="1"
-          required
-        />
-        <input
-          type="text"
-          name="cardNumber"
-          placeholder="Card Number"
-          value={paymentDetails.cardNumber}
-          onChange={handleInputChange}
-          required
-        />
-        <input
-          type="text"
-          name="expiryDate"
-          placeholder="Expiry Date (MM/YY)"
-          value={paymentDetails.expiryDate}
-          onChange={handleInputChange}
-          required
-        />
-        <input
-          type="text"
-          name="cvv"
-          placeholder="CVV"
-          value={paymentDetails.cvv}
-          onChange={handleInputChange}
-          required
-        />
-        <button type="submit" className="cta-button" disabled={loading}>
-          {loading ? 'Processing...' : 'Pay Now'}
-        </button>
-      </form>
+      
+      {checkingAvailability ? (
+        <div className="availability-checking">
+          <p>Checking date availability...</p>
+        </div>
+      ) : (
+        <form onSubmit={handlePaymentSubmit} className="payment-form">
+          <input
+            type="text"
+            name="cardHolderName"
+            placeholder="Cardholder Name"
+            value={paymentDetails.cardHolderName}
+            onChange={handleInputChange}
+            required
+          />
+          <input
+            type="text"
+            name="guestName"
+            placeholder="Full Name"
+            value={guestName}
+            onChange={(e) => setGuestName(e.target.value)}
+            required
+          />
+          <input
+            type="number"
+            name="guestCount"
+            placeholder="Number of Guests"
+            value={guestCount}
+            onChange={(e) => setGuestCount(e.target.value)}
+            min="1"
+            required
+          />
+          <input
+            type="text"
+            name="cardNumber"
+            placeholder="Card Number"
+            value={paymentDetails.cardNumber}
+            onChange={handleInputChange}
+            required
+          />
+          <input
+            type="text"
+            name="expiryDate"
+            placeholder="Expiry Date (MM/YY)"
+            value={paymentDetails.expiryDate}
+            onChange={handleInputChange}
+            required
+          />
+          <input
+            type="text"
+            name="cvv"
+            placeholder="CVV"
+            value={paymentDetails.cvv}
+            onChange={handleInputChange}
+            required
+          />
+          <button type="submit" className="cta-button" disabled={loading || checkingAvailability}>
+            {loading ? 'Processing...' : 'Pay Now'}
+          </button>
+        </form>
+      )}
     
       <style>{`
         .payment-container {
@@ -215,6 +309,15 @@ const Payment = () => {
         .cta-button:disabled {
           background: #ccc;
           cursor: not-allowed;
+        }
+        
+        .availability-checking {
+          text-align: center;
+          padding: 2rem;
+          margin-top: 1.5rem;
+          border: 1px solid #ddd;
+          border-radius: 8px;
+          background-color: #f9f9f9;
         }
       `}</style>
     </div>

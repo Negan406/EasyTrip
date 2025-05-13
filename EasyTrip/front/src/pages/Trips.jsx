@@ -52,8 +52,8 @@ const Trips = () => {
         } else {
           setTrips([]);
         }
-      } catch (error) {
-        console.error("Failed to load trips:", error);
+    } catch (error) {
+      console.error("Failed to load trips:", error);
         setNotification({
           message: error.message === 'Authentication required' 
             ? 'Please log in to view your trips'
@@ -73,10 +73,10 @@ const Trips = () => {
       const booking = trips.find(trip => trip.id === bookingId);
       if (booking?.payment_status === "completed") {
         setNotification({ message: "Cannot cancel a completed booking.", type: "error" });
-        return;
-      }
+      return;
+    }
       setTripToDelete(bookingId);
-      setShowModal(true);
+    setShowModal(true);
     } catch (error) {
       console.error('Error handling delete:', error);
       setNotification({ message: "Failed to process deletion.", type: "error" });
@@ -97,7 +97,7 @@ const Trips = () => {
       console.error('Error deleting trip:', error);
       setNotification({ message: "Failed to cancel trip. Please try again.", type: "error" });
     } finally {
-      setShowModal(false);
+    setShowModal(false);
     }
   };
 
@@ -158,19 +158,19 @@ const Trips = () => {
             <LoadingSpinner />
           </div>
         ) : (
-          <div className="trips-list">
+        <div className="trips-list">
             {!trips || trips.length === 0 ? (
-              <div className="no-trips-message">
+            <div className="no-trips-message">
                 <FontAwesomeIcon icon={faCalendarAlt} />
-                <h2>No trips yet</h2>
-                <p>Time to dust off your bags and start planning your next adventure</p>
-                <a href="/" className="cta-button">Start searching</a>
-              </div>
-            ) : (
+              <h2>No trips yet</h2>
+              <p>Time to dust off your bags and start planning your next adventure</p>
+              <a href="/" className="cta-button">Start searching</a>
+            </div>
+          ) : (
               trips.map((trip) => {
                 const paymentStatus = trip.payment_status || 'pending';
-                
-                return (
+              
+              return (
                   <div key={trip.id} className="trip-item">
                     <div className="trip-status" style={{ backgroundColor: getStatusColor(paymentStatus) }}>
                       {paymentStatus.charAt(0).toUpperCase() + paymentStatus.slice(1)}
@@ -210,13 +210,13 @@ const Trips = () => {
                         <img
                           src={getImageUrl(trip.listing?.main_photo)}
                           alt={trip.listing?.title || "Trip Image"}
-                          className="trip-image"
+                    className="trip-image"
                           onError={(e) => {
                             e.target.onerror = null;
                             e.target.src = 'https://via.placeholder.com/300x200?text=No+Image';
                           }}
-                        />
-                        <div className="trip-details">
+                  />
+                  <div className="trip-details">
                           <h3>{trip.listing?.title || "Unknown Location"}</h3>
                           <div className="trip-info">
                             <p>
@@ -235,11 +235,11 @@ const Trips = () => {
                         </div>
                       </>
                     )}
-                  </div>
-                );
-              })
-            )}
-          </div>
+                </div>
+              );
+            })
+          )}
+        </div>
         )}
       </div>
       

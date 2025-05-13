@@ -140,7 +140,7 @@ const Home = ({ searchTerm }) => {
         console.error("Error fetching listings:", error);
         setListings([]);
         setFilteredListings([]);
-        setLoading(false);
+      setLoading(false);
       }
     };
 
@@ -244,14 +244,14 @@ const Home = ({ searchTerm }) => {
 
       if (response.status === 200 || response.status === 204) {
         // Remove the deleted listing from both listings and filteredListings
-        const updatedListings = listings.filter(listing => listing.id !== listingId);
+      const updatedListings = listings.filter(listing => listing.id !== listingId);
         const updatedFilteredListings = filteredListings.filter(listing => listing.id !== listingId);
         
-        setListings(updatedListings);
+      setListings(updatedListings);
         setFilteredListings(updatedFilteredListings);
         
-        setShowSuccessMsg(true);
-        setTimeout(() => setShowSuccessMsg(false), 3000);
+      setShowSuccessMsg(true);
+      setTimeout(() => setShowSuccessMsg(false), 3000);
       } else {
         throw new Error('Failed to delete listing');
       }
@@ -274,18 +274,18 @@ const Home = ({ searchTerm }) => {
   return (
     <div className="page-wrapper">
       <div className="home-container">
-        {showSuccessMsg && (
-          <div className="success-message" data-aos="fade-down">
-            Listing deleted successfully!
-          </div>
-        )}
+          {showSuccessMsg && (
+            <div className="success-message" data-aos="fade-down">
+              Listing deleted successfully!
+            </div>
+          )}
         
         {notification && (
           <div className={`notification ${notification.type}`}>
             {notification.message}
             <button className="close-btn" onClick={() => setNotification(null)}>×</button>
-          </div>
-        )}
+            </div>
+          )}
 
         <div className="filters-container">
           <div className="filters" data-aos="fade-down">
@@ -343,43 +343,43 @@ const Home = ({ searchTerm }) => {
               ) : filteredListings.length === 0 ? (
                 <div className="no-results" data-aos="fade-up">
                   <p>No listings found for this category.</p>
-                </div>
-              ) : (
+              </div>
+            ) : (
                 <div className="listings">
                   {filteredListings.map((listing, index) => (
-                    <div 
-                      key={listing.id} 
-                      data-aos="fade-up"
-                      data-aos-delay={index * 100}
-                      className={`listing-wrapper ${clickedListingId === listing.id ? 'loading' : ''}`}
+                <div 
+                  key={listing.id} 
+                  data-aos="fade-up"
+                  data-aos-delay={index * 100}
+                  className={`listing-wrapper ${clickedListingId === listing.id ? 'loading' : ''}`}
                       onClick={() => {
                         setClickedListingId(listing.id);
                         setTimeout(() => {
                           navigate(`/listing/${listing.id}`);
                         }, 500);
                       }}
-                    >
-                      <ListingCard listing={listing} />
-                      {isLoggedIn && role === 'admin' && (
-                        <button 
+                >
+                  <ListingCard listing={listing} />
+                  {isLoggedIn && role === 'admin' && (
+                    <button 
                           className="delete-button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteClick(listing.id);
-                          }}
-                          disabled={deleteLoading}
-                        >
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteClick(listing.id);
+                      }}
+                      disabled={deleteLoading}
+                    >
                           <FontAwesomeIcon icon="trash" className="delete-icon" />
                           <span>Delete</span>
-                        </button>
-                      )}
+                    </button>
+                  )}
                     </div>
                   ))}
                 </div>
               )}
             </div>
-          )}
-        </div>
+            )}
+          </div>
       </div>
 
       <footer className="footer">
@@ -388,31 +388,31 @@ const Home = ({ searchTerm }) => {
         </div>
       </footer>
 
-      {deleteConfirmation && (
-        <>
+          {deleteConfirmation && (
+            <>
           <div className="modal-overlay" onClick={handleCancelDelete}></div>
-          <div className="delete-confirmation-modal">
-            <h3>Confirm Deletion</h3>
+              <div className="delete-confirmation-modal">
+                <h3>Confirm Deletion</h3>
             <p>Are you sure you want to delete this listing? This action cannot be undone.</p>
-            <div className="confirmation-buttons">
-              <button 
-                className="cancel-delete"
-                onClick={handleCancelDelete}
-                disabled={deleteLoading}
-              >
-                Cancel
-              </button>
-              <button 
+                <div className="confirmation-buttons">
+                  <button 
+                    className="cancel-delete"
+                    onClick={handleCancelDelete}
+                    disabled={deleteLoading}
+                  >
+                    Cancel
+                  </button>
+                  <button 
                 className={`confirm-delete ${deleteLoading ? 'loading' : ''}`}
-                onClick={() => handleConfirmDelete(deleteConfirmation)}
-                disabled={deleteLoading}
-              >
-                {deleteLoading ? 'Deleting...' : 'Delete'}
-              </button>
-            </div>
-          </div>
-        </>
-      )}
+                    onClick={() => handleConfirmDelete(deleteConfirmation)}
+                    disabled={deleteLoading}
+                  >
+                    {deleteLoading ? 'Deleting...' : 'Delete'}
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
 
       <style>{`
         .page-wrapper {
@@ -640,7 +640,7 @@ const Home = ({ searchTerm }) => {
         .filters::-webkit-scrollbar {
           display: none;
         }
-
+        
         .filter-button {
           display: flex;
           align-items: center;

@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, forwardRef } from 'react';
 import PropTypes from 'prop-types';
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faStar, faUser, faCheck, faTrash } from "@fortawesome/free-solid-svg-icons";
+import { faStar, faUser, faCheck, faTrash, faPen } from "@fortawesome/free-solid-svg-icons";
 import axios from 'axios';
 
-const Comments = ({ listingId }) => {
+const Comments = forwardRef(({ listingId, highlightReviewForm = false, initialRating = 0, initialReviewCount = 0 }, ref) => {
   const [reviews, setReviews] = useState([]);
   const [newReview, setNewReview] = useState('');
   const [rating, setRating] = useState(0);
@@ -13,9 +13,53 @@ const Comments = ({ listingId }) => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [averageRating, setAverageRating] = useState(0);
-  const [totalReviews, setTotalReviews] = useState(0);
+  const [averageRating, setAverageRating] = useState(initialRating);
+  const [totalReviews, setTotalReviews] = useState(initialReviewCount);
   const [reviewStatus, setReviewStatus] = useState('');
+  const [currentUserPhoto, setCurrentUserPhoto] = useState(null);
+
+  // Function to get correct image URL for profile photos
+  const getImageUrl = (imageUrl) => {
+    if (!imageUrl) return null;
+    
+    // If it's already a full URL
+    if (imageUrl.startsWith('http')) {
+      return imageUrl;
+    }
+    
+    // For storage paths
+    if (imageUrl.includes('storage/') || imageUrl.startsWith('profiles/') || imageUrl.startsWith('listings/')) {
+      const cleanPath = imageUrl
+        .replace('storage/', '')  // Remove 'storage/' if present
+        .replace(/^\/+/, '');     // Remove leading slashes
+      return `http://localhost:8000/storage/${cleanPath}`;
+    }
+    
+    // For any other case, assume it's a relative path in storage
+    const cleanPath = imageUrl.replace(/^\/+/, '');
+    return `http://localhost:8000/storage/${cleanPath}`;
+  };
+
+  useEffect(() => {
+    const fetchCurrentUserPhoto = async () => {
+      const token = localStorage.getItem('authToken');
+      if (!token) return;
+      
+      try {
+        const response = await axios.get('http://localhost:8000/api/user', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        if (response.data && response.data.user && response.data.user.profile_photo) {
+          setCurrentUserPhoto(getImageUrl(response.data.user.profile_photo));
+        }
+      } catch (error) {
+        console.error('Error fetching user profile photo:', error);
+      }
+    };
+    
+    fetchCurrentUserPhoto();
+  }, []);
 
   useEffect(() => {
     const fetchReviews = async () => {
@@ -59,8 +103,8 @@ const Comments = ({ listingId }) => {
 
       setIsLoggedIn(true);
       try {
-        // First check if user has a completed payment for this listing
-        const bookingResponse = await axios.get(`http://localhost:8000/api/bookings/check/${listingId}`, {
+        // Check if user has a completed payment for this listing
+        const bookingResponse = await axios.get(`http://localhost:8000/api/bookings/completed/${listingId}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
 
@@ -211,15 +255,15 @@ const Comments = ({ listingId }) => {
   }
 
   return (
-    <div className="comments-section">
+    <div className="comments-section" ref={ref}>
       <div className="reviews-header">
-        <h2>Reviews</h2>
+      <h2>Reviews</h2>
         <div className="rating-summary">
           <div className="average-rating">
             <FontAwesomeIcon icon={faStar} className="star active" />
-            <span>{averageRating.toFixed(1)}</span>
+            <span>{averageRating > 0 ? averageRating.toFixed(1) : '0.0'}</span>
           </div>
-          <span className="total-reviews">({totalReviews} reviews)</span>
+          <span className="total-reviews">({totalReviews} {totalReviews === 1 ? 'review' : 'reviews'})</span>
         </div>
       </div>
       
@@ -236,8 +280,22 @@ const Comments = ({ listingId }) => {
       )}
       
       {isLoggedIn && canReview && (
-        <form onSubmit={handleSubmit} className="comment-form">
-          <h3>Share Your Experience</h3>
+        <form onSubmit={handleSubmit} className={`comment-form ${highlightReviewForm ? 'highlight-form' : ''}`}>
+          <div className="user-review-header">
+            {currentUserPhoto ? (
+              <img 
+                src={currentUserPhoto} 
+                alt="Your profile" 
+                className="user-avatar current-user-avatar"
+              />
+            ) : (
+              <FontAwesomeIcon icon={faUser} className="user-icon" />
+            )}
+            <h3>
+              <FontAwesomeIcon icon={faPen} className="pen-icon" />
+              Share Your Experience
+            </h3>
+          </div>
           <div className="rating-input">
             {[...Array(5)].map((_, index) => (
               <FontAwesomeIcon
@@ -271,7 +329,19 @@ const Comments = ({ listingId }) => {
             <div key={review.id} className="comment" data-aos="fade-up">
               <div className="comment-header">
                 <div className="user-info">
-                  <FontAwesomeIcon icon={faUser} className="user-icon" />
+                  {review.user && review.user.profile_photo ? (
+                    <img 
+                      src={getImageUrl(review.user.profile_photo)} 
+                      alt={review.user.name} 
+                      className="user-avatar"
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = 'https://via.placeholder.com/40x40?text=User';
+                      }}
+                    />
+                  ) : (
+                    <FontAwesomeIcon icon={faUser} className="user-icon" />
+                  )}
                   <span className="user-name">{review.user?.name || 'Anonymous'}</span>
                   {review.user?.verified && (
                     <span className="verified-user">
@@ -280,14 +350,14 @@ const Comments = ({ listingId }) => {
                   )}
                 </div>
                 <div className="review-actions">
-                  <div className="rating">
+                <div className="rating">
                     {[...Array(5)].map((_, index) => (
-                      <FontAwesomeIcon
-                        key={index}
-                        icon={faStar}
+                    <FontAwesomeIcon
+                      key={index}
+                      icon={faStar}
                         className={`star ${index < review.rating ? 'active' : ''}`}
-                      />
-                    ))}
+                    />
+                  ))}
                   </div>
                   {review.user_id === parseInt(localStorage.getItem('userId')) && (
                     <button 
@@ -383,6 +453,36 @@ const Comments = ({ listingId }) => {
           background: #f8f9fa;
           border-radius: 12px;
           border: 1px solid #e9ecef;
+        }
+        
+        .highlight-form {
+          animation: pulse 2s infinite;
+          border: 2px solid #007bff !important;
+          position: relative;
+        }
+        
+        .highlight-form::before {
+          content: 'Share your thoughts!';
+          position: absolute;
+          top: -15px;
+          right: 20px;
+          background: #007bff;
+          color: white;
+          padding: 5px 10px;
+          border-radius: 4px;
+          font-size: 0.8rem;
+          font-weight: bold;
+        }
+        
+        .pen-icon {
+          margin-right: 8px;
+          color: #007bff;
+        }
+        
+        @keyframes pulse {
+          0% { box-shadow: 0 0 0 0 rgba(0, 123, 255, 0.4); }
+          70% { box-shadow: 0 0 0 10px rgba(0, 123, 255, 0); }
+          100% { box-shadow: 0 0 0 0 rgba(0, 123, 255, 0); }
         }
 
         .comment-form h3 {
@@ -560,14 +660,44 @@ const Comments = ({ listingId }) => {
             gap: 0.8rem;
           }
         }
+
+        .user-avatar {
+          width: 40px;
+          height: 40px;
+          border-radius: 50%;
+          object-fit: cover;
+          border: 2px solid white;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .user-review-header {
+          display: flex;
+          align-items: center;
+          gap: 1rem;
+          margin-bottom: 1rem;
+        }
+        
+        .user-review-header h3 {
+          margin: 0;
+        }
+        
+        .current-user-avatar {
+          width: 45px;
+          height: 45px;
+        }
         `}
       </style>
     </div>
   );
-};
+});
 
 Comments.propTypes = {
-  listingId: PropTypes.string.isRequired
+  listingId: PropTypes.string.isRequired,
+  highlightReviewForm: PropTypes.bool,
+  initialRating: PropTypes.number,
+  initialReviewCount: PropTypes.number
 };
+
+Comments.displayName = 'Comments';
 
 export default Comments;

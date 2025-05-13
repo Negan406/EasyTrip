@@ -9,12 +9,10 @@ use Illuminate\Support\Facades\Hash;
 use App\Models\User;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
-use Laravel\Sanctum\HasApiTokens;
+use Illuminate\Support\Facades\Storage;
 
 class AuthController extends Controller
 {
-    use HasApiTokens;
-
     /**
      * Handle login request via backend using database authentication.
      */
@@ -120,6 +118,130 @@ class AuthController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Registration failed: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Update user profile information.
+     */
+    public function updateProfile(Request $request)
+    {
+        // Get authenticated user's ID
+        $userId = Auth::id();
+        $user = User::find($userId);
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'User not found'
+            ], 404);
+        }
+
+        // Validate the incoming request data
+        $validator = Validator::make($request->all(), [
+            'name' => 'required|string|max:255',
+            'phone' => 'required|string',
+            'profile_photo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => $validator->errors()->first(),
+            ], 422);
+        }
+
+        try {
+            // Handle profile photo upload
+            if ($request->hasFile('profile_photo')) {
+                // Delete old profile photo if exists
+                if ($user->profile_photo) {
+                    Storage::disk('public')->delete($user->profile_photo);
+                }
+                
+                $photo = $request->file('profile_photo');
+                $filename = time() . '_' . str_replace(' ', '_', $photo->getClientOriginalName());
+                $profilePhotoPath = $photo->storeAs('profiles', $filename, 'public');
+                
+                $user->profile_photo = $profilePhotoPath;
+            }
+
+            // Update user information
+            $user->name = $request->name;
+            $user->phone = $request->phone;
+            $user->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Profile updated successfully',
+                'user' => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'phone' => $user->phone,
+                    'role' => $user->role,
+                    'profile_photo' => $user->profile_photo ? asset('storage/' . $user->profile_photo) : null
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update profile: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Change user's password.
+     */
+    public function changePassword(Request $request)
+    {
+        // Get authenticated user's ID
+        $userId = Auth::id();
+        $user = User::find($userId);
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'User not found'
+            ], 404);
+        }
+
+        // Validate the incoming request data
+        $validator = Validator::make($request->all(), [
+            'current_password' => 'required|string',
+            'new_password' => 'required|string|min:6'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => $validator->errors()->first(),
+            ], 422);
+        }
+
+        // Check if current password is correct
+        if (!Hash::check($request->current_password, $user->password)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Current password is incorrect'
+            ], 422);
+        }
+
+        try {
+            // Update password
+            $user->password = Hash::make($request->new_password);
+            $user->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Password changed successfully'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to change password: ' . $e->getMessage()
             ], 500);
         }
     }

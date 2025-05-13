@@ -55,7 +55,7 @@ const ListingCard = ({ listing, onRemoveFromWishlist, isInWishlist = false }) =>
     setIsProcessing(true);
     try {
       const token = localStorage.getItem('authToken');
-      if (!isFavorite) {
+    if (!isFavorite) {
         // Add to wishlist
         const response = await axios.post('http://localhost:8000/api/wishlists', {
           listing_id: listing.id
@@ -72,7 +72,7 @@ const ListingCard = ({ listing, onRemoveFromWishlist, isInWishlist = false }) =>
           type: 'success'
         });
         setIsFavorite(true);
-      } else {
+    } else {
         // Remove from wishlist
         const wishlistId = listing.wishlist_id;
         if (!wishlistId) {
@@ -181,7 +181,7 @@ const ListingCard = ({ listing, onRemoveFromWishlist, isInWishlist = false }) =>
         />
       )}
       <Link to={`/listing/${listing.id}`} className="listing-card">
-        <div className="listing-image">
+          <div className="listing-image">
           <img 
             src={getImageUrl(listing.main_photo || listing.mainPhoto)}
             alt={listing.title} 
@@ -203,17 +203,17 @@ const ListingCard = ({ listing, onRemoveFromWishlist, isInWishlist = false }) =>
             }}
           />
           <div className="image-overlay"></div>
-          <button 
+            <button 
             className={`favorite ${isFavorite ? 'active' : ''} ${isProcessing ? 'processing' : ''}`}
-            onClick={handleFavoriteClick}
+              onClick={handleFavoriteClick}
             disabled={isProcessing}
             title={isFavorite ? 'Remove from Wishlist' : 'Add to Wishlist'}
-          >
+            >
             <FontAwesomeIcon 
               icon={isFavorite ? faHeart : faRegularHeart}
               className={isProcessing ? 'fa-beat' : ''}
             />
-          </button>
+            </button>
           {listing.category && (
             <div className="category-tag">
               <FontAwesomeIcon icon={faTag} />
@@ -236,16 +236,16 @@ const ListingCard = ({ listing, onRemoveFromWishlist, isInWishlist = false }) =>
               )}
             </span>
           </div>
-        </div>
-        <div className="listing-info">
-          <div className="listing-title">
-            <h3>{listing.title}</h3>
           </div>
-          <p className="listing-details">{listing.location}</p>
+          <div className="listing-info">
+            <div className="listing-title">
+              <h3>{listing.title}</h3>
+            </div>
+            <p className="listing-details">{listing.location}</p>
           <p className="listing-price">
             <strong>${listing.price}</strong> <span className="per-night">night</span>
           </p>
-          <p className="listing-description">{listing.description}</p>
+            <p className="listing-description">{listing.description}</p>
         </div>
       </Link>
       <style>{`

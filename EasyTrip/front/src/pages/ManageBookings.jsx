@@ -138,13 +138,13 @@ const ManageBookings = () => {
   return (
     <div className="page-wrapper">
       <div className="content-area">
-        {notification && (
-          <Notification
-            message={notification.message}
-            type={notification.type}
-            onClose={closeNotification}
-          />
-        )}
+          {notification && (
+            <Notification
+              message={notification.message}
+              type={notification.type}
+              onClose={closeNotification}
+            />
+          )}
         
         <h1 className="page-title">Manage Listing Bookings</h1>
         
@@ -177,7 +177,7 @@ const ManageBookings = () => {
                         </span>
                       </div>
                     </div>
-                    <div className="booking-details">
+                  <div className="booking-details">
                       <h3>{booking.listing?.title || 'Listing not available'}</h3>
                       <div className="guest-info">
                         <FontAwesomeIcon icon={faUser} className="guest-icon" />
@@ -215,10 +215,10 @@ const ManageBookings = () => {
                       )}
                     </div>
                   </div>
-                ))}
+              ))}
               </div>
-            )}
-          </div>
+          )}
+        </div>
         )}
       </div>
       

@@ -20,8 +20,10 @@ class ReviewController extends Controller
                 'listing_id' => 'required|exists:listings,id'
             ]);
 
-            $query = Review::with('user')
-                ->where('listing_id', $request->listing_id);
+            $query = Review::with(['user' => function ($query) {
+                $query->select('id', 'name', 'email', 'profile_photo', 'is_verified');
+            }])
+            ->where('listing_id', $request->listing_id);
             
             // If user_id is provided, filter by it
             if ($request->has('user_id')) {
@@ -30,9 +32,17 @@ class ReviewController extends Controller
 
             $reviews = $query->latest()->paginate(10);
 
+            // Format reviews to include profile photo URLs
+            $formattedReviews = $reviews->through(function($review) {
+                if ($review->user && $review->user->profile_photo) {
+                    $review->user->profile_photo = $review->user->profile_photo;
+                }
+                return $review;
+            });
+
             return response()->json([
                 'success' => true,
-                'data' => $reviews->items(),
+                'data' => $formattedReviews->items(),
                 'meta' => [
                     'total' => $reviews->total(),
                     'current_page' => $reviews->currentPage(),
@@ -79,7 +89,9 @@ class ReviewController extends Controller
             ]);
 
             // Load the user relationship for the response
-            $review->load('user');
+            $review->load(['user' => function ($query) {
+                $query->select('id', 'name', 'email', 'profile_photo', 'is_verified');
+            }]);
 
             return response()->json([
                 'success' => true,

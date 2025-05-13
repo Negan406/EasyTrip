@@ -1,10 +1,22 @@
 import { useState, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTrash, faCrown, faPhone } from '@fortawesome/free-solid-svg-icons';
+import { 
+  faTrash, faCrown, faPhone, faUserGear, 
+  faShield, faUserPlus, faEnvelope, faKey, faUser
+} from '@fortawesome/free-solid-svg-icons';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import LoadingSpinner from '../components/LoadingSpinner';
 import Sidebar from '../components/Sidebar';
+
+// Add loading animation constants
+const LOADING_MESSAGES = [
+  "Loading user profiles...",
+  "Fetching account information...",
+  "Preparing user management tools...",
+  "Retrieving user data...",
+  "Almost there..."
+];
 
 const ManageUsers = () => {
   const [users, setUsers] = useState([]);
@@ -12,27 +24,75 @@ const ManageUsers = () => {
   const [error, setError] = useState(null);
   const [deleteConfirmation, setDeleteConfirmation] = useState(null);
   const [notification, setNotification] = useState(null);
+  const [loadingMessage, setLoadingMessage] = useState(LOADING_MESSAGES[0]);
   const navigate = useNavigate();
+
+  // Add loading message rotation
+  useEffect(() => {
+    if (!loading) return;
+    
+    let messageIndex = 0;
+    const intervalId = setInterval(() => {
+      messageIndex = (messageIndex + 1) % LOADING_MESSAGES.length;
+      setLoadingMessage(LOADING_MESSAGES[messageIndex]);
+    }, 2000); // Change message every 2 seconds
+    
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, [loading]);
+
+  useEffect(() => {
+    const fetchDebugLogs = async () => {
+      try {
+        const token = localStorage.getItem('authToken');
+        const response = await axios.get('http://localhost:8000/api/users', {
+          headers: { 
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (response.data.success && response.data.users && response.data.users.length > 0) {
+          const sampleUser = response.data.users[0];
+          console.log('Sample user data format:', sampleUser);
+          console.log('Profile photo value:', sampleUser.profile_photo);
+          
+          // Test the URL format that AccountSettings.jsx uses
+          if (sampleUser.profile_photo) {
+            const testUrl = `http://localhost:8000/storage/${sampleUser.profile_photo}`;
+            console.log('Test URL format:', testUrl);
+            
+            // Fetch the image to check if it exists
+            fetch(testUrl)
+              .then(res => {
+                console.log('Image fetch status:', res.status, res.ok);
+              })
+              .catch(err => console.error('Image fetch error:', err));
+          }
+        }
+      } catch (error) {
+        console.error('Debug log error:', error);
+      }
+    };
+    
+    if (localStorage.getItem('role') === 'admin') {
+      fetchDebugLogs();
+    }
+  }, []);
 
   const getImageUrl = (imageUrl) => {
     if (!imageUrl) return 'https://via.placeholder.com/150x150?text=User';
     
-    // If it's already a full URL
+    // If it's already a full URL, return it as is
     if (imageUrl.startsWith('http')) {
       return imageUrl;
     }
     
-    // For storage paths
-    if (imageUrl.includes('storage/') || imageUrl.startsWith('profiles/') || imageUrl.startsWith('listings/')) {
-      const cleanPath = imageUrl
-        .replace('storage/', '')  // Remove 'storage/' if present
-        .replace(/^\/+/, '');     // Remove leading slashes
-      return `http://localhost:8000/storage/${cleanPath}`;
-    }
-    
-    // For any other case, assume it's a relative path in storage
-    const cleanPath = imageUrl.replace(/^\/+/, '');
-    return `http://localhost:8000/storage/${cleanPath}`;
+    // Use the same format as AccountSettings.jsx
+    // This assumes the API returns paths without 'storage/' prefix
+    return `http://localhost:8000/storage/${imageUrl.replace(/^\/+/, '')}`;
   };
 
   useEffect(() => {
@@ -56,7 +116,13 @@ const ManageUsers = () => {
       });
 
       if (response.data.success) {
-        setUsers(response.data.users);
+        // Process users to ensure consistent photo URLs
+        const processedUsers = response.data.users.map(user => ({
+          ...user,
+          profile_photo: user.profile_photo || null
+        }));
+        
+        setUsers(processedUsers);
       } else {
         throw new Error(response.data.message || 'Failed to fetch users');
       }
@@ -105,14 +171,189 @@ const ManageUsers = () => {
     }
   };
 
-  if (loading) return <LoadingSpinner />;
+  if (loading) {
+    return (
+      <div className="users-loading-container">
+        <div className="users-loading-content">
+          <LoadingSpinner size="large" color="#ff385c" />
+          <h3 className="loading-title">{loadingMessage}</h3>
+          <div className="loading-progress">
+            <div className="progress-bar"></div>
+          </div>
+          <div className="loading-users">
+            <span className="user-type"><FontAwesomeIcon icon={faUserGear} /> Administrators</span>
+            <span className="user-type"><FontAwesomeIcon icon={faKey} /> Account Managers</span>
+            <span className="user-type"><FontAwesomeIcon icon={faEnvelope} /> Email Subscribers</span>
+            <span className="user-type"><FontAwesomeIcon icon={faUserPlus} /> New Users</span>
+          </div>
+        </div>
+        <div className="floating-icons">
+          {[
+            faUserGear, faShield, faEnvelope, faPhone, 
+            faUserPlus, faKey, faCrown, faTrash
+          ].map((icon, i) => (
+            <FontAwesomeIcon 
+              key={i} 
+              icon={icon} 
+              className={`floating-icon icon-${i + 1}`} 
+            />
+          ))}
+        </div>
+        <style jsx>{`
+          .users-loading-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            width: 100%;
+            position: relative;
+            background-color: #f8f9fa;
+          }
+          
+          .users-loading-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 3rem;
+            background-color: white;
+            border-radius: 1rem;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            max-width: 500px;
+            width: 90%;
+            text-align: center;
+            animation: fadeIn 0.5s ease;
+            z-index: 1;
+          }
+          
+          .loading-title {
+            margin-top: 1.5rem;
+            margin-bottom: 0.5rem;
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #343a40;
+          }
+          
+          .loading-progress {
+            width: 80%;
+            height: 6px;
+            background-color: #e9ecef;
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 1rem;
+          }
+          
+          .progress-bar {
+            height: 100%;
+            width: 0;
+            background: linear-gradient(to right, #ff385c, #ff8a65);
+            border-radius: 3px;
+            animation: progress 2s ease infinite;
+          }
+          
+          .loading-users {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 1.5rem;
+          }
+          
+          .user-type {
+            background: rgba(255, 56, 92, 0.1);
+            color: #ff385c;
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            animation: breathe 3s infinite ease-in-out;
+          }
+          
+          .user-type:nth-child(1) { animation-delay: 0s; }
+          .user-type:nth-child(2) { animation-delay: 0.5s; }
+          .user-type:nth-child(3) { animation-delay: 1s; }
+          .user-type:nth-child(4) { animation-delay: 1.5s; }
+          
+          @keyframes breathe {
+            0%, 100% { transform: scale(1); opacity: 0.8; }
+            50% { transform: scale(1.05); opacity: 1; }
+          }
+          
+          .floating-icons {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+          }
+          
+          .floating-icon {
+            position: absolute;
+            color: rgba(255, 56, 92, 0.1);
+            font-size: 20px;
+            animation-name: float;
+            animation-duration: 10s;
+            animation-timing-function: ease-in-out;
+            animation-iteration-count: infinite;
+          }
+          
+          .icon-1 { left: 10%; top: 20%; animation-delay: 0s; font-size: 18px; }
+          .icon-2 { left: 20%; top: 60%; animation-delay: 1s; font-size: 24px; }
+          .icon-3 { left: 30%; top: 30%; animation-delay: 2s; font-size: 16px; }
+          .icon-4 { left: 50%; top: 70%; animation-delay: 3s; font-size: 22px; }
+          .icon-5 { left: 65%; top: 40%; animation-delay: 4s; font-size: 19px; }
+          .icon-6 { left: 75%; top: 20%; animation-delay: 5s; font-size: 25px; }
+          .icon-7 { left: 85%; top: 50%; animation-delay: 6s; font-size: 17px; }
+          .icon-8 { left: 90%; top: 80%; animation-delay: 7s; font-size: 21px; }
+          
+          @keyframes float {
+            0% { transform: translateY(0) rotate(0deg); opacity: 0.1; }
+            25% { transform: translateY(-20px) rotate(5deg); opacity: 0.3; }
+            50% { transform: translateY(-35px) rotate(0deg); opacity: 0.1; }
+            75% { transform: translateY(-20px) rotate(-5deg); opacity: 0.3; }
+            100% { transform: translateY(0) rotate(0deg); opacity: 0.1; }
+          }
+          
+          @keyframes progress {
+            0% { width: 0%; }
+            50% { width: 70%; }
+            100% { width: 95%; }
+          }
+          
+          @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+          }
+          
+          @media (max-width: 768px) {
+            .users-loading-content {
+              padding: 2rem;
+            }
+            
+            .loading-title {
+              font-size: 1.2rem;
+            }
+            
+            .loading-users {
+              flex-direction: column;
+              align-items: center;
+            }
+          }
+        `}</style>
+      </div>
+    );
+  }
 
   return (
     <div className="app-container">
       <Sidebar />
-      <div className="manage-users-container">
+    <div className="manage-users-container">
         <div className="content-wrapper">
-          <h1>Manage Users</h1>
+      <h1>Manage Users</h1>
 
           {error && (
             <div className="error-message">
@@ -137,11 +378,27 @@ const ManageUsers = () => {
               <div key={user.id} className="user-card" data-aos="fade-up">
                 <div className="user-info">
                   <div className="user-photo-container">
-                    <img 
-                      src={getImageUrl(user.profile_photo)}
-                      alt={user.name}
-                      
-                    />
+                    {user.profile_photo ? (
+                      <img 
+                        src={getImageUrl(user.profile_photo)}
+                        alt={user.name}
+                        className="user-avatar"
+                        onError={(e) => {
+                          console.error('Image failed to load:', {
+                            userId: user.id,
+                            userName: user.name,
+                            original: user.profile_photo,
+                            attempted: e.target.src
+                          });
+                          e.target.onerror = null;
+                          e.target.src = 'https://via.placeholder.com/150x150?text=User';
+                        }}
+                      />
+                    ) : (
+                      <div className="default-avatar">
+                        <FontAwesomeIcon icon={faUser} />
+                      </div>
+                    )}
                     {user.role === 'admin' && (
                       <div className="admin-badge">
                         <FontAwesomeIcon icon={faCrown} />
@@ -232,6 +489,8 @@ const ManageUsers = () => {
             flex-direction: column;
             gap: 1rem;
             transition: transform 0.3s ease, box-shadow 0.3s ease;
+            position: relative;
+            overflow: hidden;
           }
 
           .user-card:hover {
@@ -248,19 +507,24 @@ const ManageUsers = () => {
           .user-photo-container {
             position: relative;
             flex-shrink: 0;
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            overflow: hidden;
+            background-color: #f5f5f5;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-right: 1rem;
+            border: 3px solid white;
           }
 
           .user-avatar {
-            width: 100px;
-            height: 100px;
-            border-radius: 50%;
+            width: 100%;
+            height: 100%;
             object-fit: cover;
-            border: 3px solid white;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
             transition: transform 0.3s ease;
           }
 
-          .user-avatar:hover {
+          .user-photo-container:hover .user-avatar {
             transform: scale(1.05);
           }
 
@@ -279,6 +543,7 @@ const ManageUsers = () => {
             border: 2px solid white;
             font-size: 0.8rem;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            z-index: 2;
           }
 
           .user-details {
@@ -447,6 +712,16 @@ const ManageUsers = () => {
             text-align: center;
           }
 
+          .default-avatar {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ccc;
+            font-size: 2rem;
+          }
+
           @keyframes slideIn {
             from {
               transform: translateX(100%);
@@ -461,6 +736,9 @@ const ManageUsers = () => {
           @media (max-width: 768px) {
             .manage-users-container {
               padding: 1rem;
+              left: 0;
+              margin-left: 0;
+              margin-top: 70px; /* Add space for the mobile menu */
             }
 
             .users-grid {

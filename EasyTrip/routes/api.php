@@ -17,8 +17,15 @@ Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
 Route::middleware(['auth:sanctum'])->group(function () {
     // User route
     Route::get('/user', function (Request $request) {
-        return $request->user();
+        return response()->json([
+            'success' => true,
+            'user' => $request->user()
+        ]);
     });
+    
+    // User profile routes
+    Route::post('/user/update', [AuthController::class, 'updateProfile']);
+    Route::post('/user/change-password', [AuthController::class, 'changePassword']);
     
     // Admin routes
     Route::get('/users', [AuthController::class, 'getAllUsers']);
@@ -37,6 +44,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/bookings/{booking}/accept', [BookingController::class, 'acceptBooking']);
     Route::post('/bookings/{booking}/refuse', [BookingController::class, 'refuseBooking']);
     Route::get('/bookings/check/{listing}', [BookingController::class, 'checkBookingStatus']);
+    Route::get('/bookings/completed/{listing}', [BookingController::class, 'checkCompletedBooking']);
+    Route::post('/bookings/check-availability/{listing}', [BookingController::class, 'checkDateAvailability']);
     
     // Resource routes
     Route::apiResource('listings', ListingController::class);

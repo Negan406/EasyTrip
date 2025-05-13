@@ -31,7 +31,24 @@ const PendingListings = () => {
       });
 
       if (response.data.success) {
-        setPendingListings(response.data.listings || []);
+        // Format listings to include consistent rating property names
+        const formattedListings = (response.data.listings || []).map(listing => {
+          const rating = listing.average_rating ? parseFloat(listing.average_rating) : 
+                       (listing.rating ? parseFloat(listing.rating) : 0);
+                       
+          const totalRatings = listing.total_ratings ? parseInt(listing.total_ratings) : 
+                              (listing.totalRatings ? parseInt(listing.totalRatings) : 0);
+          
+          return {
+            ...listing,
+            rating: rating,
+            total_ratings: totalRatings,
+            averageRating: rating,
+            totalRatings: totalRatings
+          };
+        });
+        
+        setPendingListings(formattedListings);
       } else {
         throw new Error(response.data.message);
       }
