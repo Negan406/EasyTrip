@@ -1,13 +1,13 @@
 import { useState, useEffect } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faHeart, faTag, faStar as fasStar } from "@fortawesome/free-solid-svg-icons";
-import { faHeart as faRegularHeart, faStar as farStar } from "@fortawesome/free-regular-svg-icons";
+import { faHeart, faTag, faStar as fasStar, faLocationDot } from "@fortawesome/free-solid-svg-icons";
+import { faHeart as faRegularHeart } from "@fortawesome/free-regular-svg-icons";
 import PropTypes from 'prop-types';
 import { Link, useNavigate } from "react-router-dom";
 import Notification from './Notification';
 import axios from 'axios';
 
-const ListingCard = ({ listing, onRemoveFromWishlist, isInWishlist = false }) => {
+const ListingCard = ({ listing, onRemoveFromWishlist, isInWishlist = false, onWishlistUpdate }) => {
   const [isFavorite, setIsFavorite] = useState(isInWishlist);
   const [notification, setNotification] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -67,10 +67,19 @@ const ListingCard = ({ listing, onRemoveFromWishlist, isInWishlist = false }) =>
           listing.wishlist_id = response.data.wishlist_id;
         }
         
-        setNotification({ 
-          message: 'Added to wishlist!', 
-          type: 'success'
-        });
+        const message = 'Added to wishlist!';
+        const type = 'success';
+        
+        // Use the passed callback if available
+        if (onWishlistUpdate) {
+          onWishlistUpdate(message, type);
+        } else {
+          setNotification({ 
+            message, 
+            type
+          });
+        }
+        
         setIsFavorite(true);
     } else {
         // Remove from wishlist
@@ -84,10 +93,19 @@ const ListingCard = ({ listing, onRemoveFromWishlist, isInWishlist = false }) =>
         });
         
         if (response.status === 200) {
-          setNotification({ 
-            message: 'Removed from wishlist.', 
-            type: 'info' 
-          });
+          const message = 'Removed from wishlist.';
+          const type = 'info';
+          
+          // Use the passed callback if available
+          if (onWishlistUpdate) {
+            onWishlistUpdate(message, type);
+          } else {
+            setNotification({ 
+              message,
+              type
+            });
+          }
+          
           setIsFavorite(false);
           listing.wishlist_id = null;
           
@@ -100,12 +118,21 @@ const ListingCard = ({ listing, onRemoveFromWishlist, isInWishlist = false }) =>
       }
     } catch (error) {
       console.error('Failed to update wishlist:', error);
-      setNotification({ 
-        message: error.message === 'Wishlist ID not found' 
-          ? 'Error: Please try refreshing the page'
-          : 'Failed to update wishlist. Please try again.', 
-        type: 'error' 
-      });
+      const message = error.message === 'Wishlist ID not found' 
+        ? 'Error: Please try refreshing the page'
+        : 'Failed to update wishlist. Please try again.';
+      const type = 'error';
+      
+      // Use the passed callback if available
+      if (onWishlistUpdate) {
+        onWishlistUpdate(message, type);
+      } else {
+        setNotification({ 
+          message,
+          type
+        });
+      }
+      
       // Reset the favorite state if there was an error
       const token = localStorage.getItem('authToken');
       if (token) {
@@ -154,25 +181,9 @@ const ListingCard = ({ listing, onRemoveFromWishlist, isInWishlist = false }) =>
     return `http://localhost:8000/storage/${cleanPath}`;
   };
 
-  const renderStars = (rating) => {
-    const stars = [];
-    const roundedRating = Math.round(rating * 2) / 2; // Round to nearest 0.5
-
-    for (let i = 1; i <= 5; i++) {
-      if (i <= roundedRating) {
-        stars.push(<FontAwesomeIcon key={i} icon={fasStar} className="star filled" />);
-      } else if (i - 0.5 === roundedRating) {
-        stars.push(<FontAwesomeIcon key={i} icon={fasStar} className="star half-filled" />);
-      } else {
-        stars.push(<FontAwesomeIcon key={i} icon={farStar} className="star" />);
-      }
-    }
-    return stars;
-  };
-
   return (
     <>
-      {notification && (
+      {notification && !onWishlistUpdate && (
         <Notification
           message={notification.message}
           type={notification.type}
@@ -181,7 +192,7 @@ const ListingCard = ({ listing, onRemoveFromWishlist, isInWishlist = false }) =>
         />
       )}
       <Link to={`/listing/${listing.id}`} className="listing-card">
-          <div className="listing-image">
+        <div className="listing-image">
           <img 
             src={getImageUrl(listing.main_photo || listing.mainPhoto)}
             alt={listing.title} 
@@ -194,118 +205,89 @@ const ListingCard = ({ listing, onRemoveFromWishlist, isInWishlist = false }) =>
               e.target.src = 'https://via.placeholder.com/400x300?text=No+Image+Available';
             }}
             loading="lazy"
-            style={{
-              width: '100%',
-              height: '100%',
-              objectFit: 'cover',
-              borderRadius: '12px 12px 0 0',
-              backgroundColor: '#f5f5f5'
-            }}
           />
           <div className="image-overlay"></div>
-            <button 
-            className={`favorite ${isFavorite ? 'active' : ''} ${isProcessing ? 'processing' : ''}`}
-              onClick={handleFavoriteClick}
+          <button 
+            className={`favorite-btn ${isFavorite ? 'active' : ''} ${isProcessing ? 'processing' : ''}`}
+            onClick={handleFavoriteClick}
             disabled={isProcessing}
             title={isFavorite ? 'Remove from Wishlist' : 'Add to Wishlist'}
-            >
+          >
             <FontAwesomeIcon 
               icon={isFavorite ? faHeart : faRegularHeart}
               className={isProcessing ? 'fa-beat' : ''}
             />
-            </button>
+          </button>
           {listing.category && (
             <div className="category-tag">
               <FontAwesomeIcon icon={faTag} />
               <span>{formatCategory(listing.category)}</span>
             </div>
           )}
-          <div className="rating-container">
+        </div>
+        
+        <div className="listing-info">
+          <div className="listing-header">
+            <h3 className="listing-title">{listing.title}</h3>
             <div className="rating-display">
-              <FontAwesomeIcon icon={fasStar} className="rating-icon" />
-              <span className="rating-number">{listing.rating > 0 ? parseFloat(listing.rating).toFixed(1) : 'New'}</span>
-            </div>
-            <div className="stars">
-              {renderStars(listing.rating || 0)}
-            </div>
-            <span className="rating-text">
+              <FontAwesomeIcon icon={fasStar} />
               {listing.total_ratings > 0 ? (
-                <span className="rating-count">({listing.total_ratings} {listing.total_ratings === 1 ? 'review' : 'reviews'})</span>
+                <>
+                  <span>{parseFloat(listing.rating).toFixed(1)}</span>
+                  <span className="total-ratings">({listing.total_ratings} {listing.total_ratings === 1 ? 'review' : 'reviews'})</span>
+                </>
               ) : (
-                <span className="no-ratings">No reviews yet</span>
+                <span>new</span>
               )}
-            </span>
-          </div>
-          </div>
-          <div className="listing-info">
-            <div className="listing-title">
-              <h3>{listing.title}</h3>
             </div>
-            <p className="listing-details">{listing.location}</p>
-          <p className="listing-price">
-            <strong>${listing.price}</strong> <span className="per-night">night</span>
-          </p>
-            <p className="listing-description">{listing.description}</p>
+          </div>
+          
+          <div className="listing-location">
+            <FontAwesomeIcon icon={faLocationDot} className="location-icon" />
+            <span>{listing.location}</span>
+          </div>
+          
+          <div className="listing-price">
+            <strong>${listing.price}</strong><span>/night</span>
+          </div>
         </div>
       </Link>
+      
       <style>{`
         .listing-card {
-          position: relative;
+          display: flex;
+          flex-direction: column;
+          height: 100%;
           text-decoration: none;
           color: inherit;
-          display: block;
           background: white;
-          border-radius: 12px;
+          border-radius: 16px;
           overflow: hidden;
-          box-shadow: rgba(0, 0, 0, 0.1) 0px 4px 12px, 
-                      rgba(0, 0, 0, 0.05) 0px 1px 3px;
-          transition: all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
-          height: 100%;
-          margin-bottom: 20px;
-        
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+          transition: all 0.3s ease;
         }
 
         .listing-card:hover {
-          transform: translateY(-6px);
-          box-shadow: rgba(0, 0, 0, 0.16) 0px 10px 36px 0px,
-                      rgba(0, 0, 0, 0.06) 0px 0px 0px 1px,
-                      rgba(0, 0, 0, 0.07) 0px 20px 30px -10px;
+          transform: translateY(-8px);
+          box-shadow: 0 12px 24px rgba(0, 0, 0, 0.12);
         }
 
         .listing-image {
           position: relative;
           width: 100%;
-          height: 240px;
+          height: 220px;
           overflow: hidden;
-          background-color: #f5f5f5;
-          border-radius: 12px 12px 0 0;
         }
 
         .listing-image img {
           width: 100%;
           height: 100%;
           object-fit: cover;
-          transition: transform 0.3s ease;
-          background-color: #f5f5f5;
+          transition: transform 0.5s ease;
         }
 
-        .listing-image img.loading {
-          filter: blur(10px);
-          transform: scale(1.1);
-        }
-
-        .listing-image .placeholder {
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          background-color: #f5f5f5;
-          color: #666;
-          font-size: 0.9rem;
+        .listing-card:hover .listing-image img {
+          transform: scale(1.08);
         }
 
         .image-overlay {
@@ -316,10 +298,9 @@ const ListingCard = ({ listing, onRemoveFromWishlist, isInWishlist = false }) =>
           bottom: 0;
           background: linear-gradient(
             to bottom,
-            rgba(0,0,0,0.1) 0%,
-            rgba(0,0,0,0) 30%,
-            rgba(0,0,0,0) 60%,
-            rgba(0,0,0,0.1) 100%
+            rgba(0, 0, 0, 0.1) 0%,
+            rgba(0, 0, 0, 0) 40%,
+            rgba(0, 0, 0, 0.1) 100%
           );
           pointer-events: none;
           opacity: 0;
@@ -330,77 +311,77 @@ const ListingCard = ({ listing, onRemoveFromWishlist, isInWishlist = false }) =>
           opacity: 1;
         }
 
-        .listing-card:hover .listing-image img {
-          transform: scale(1.05);
-        }
-
-        .favorite {
+        .favorite-btn {
           position: absolute;
-          top: 15px;
-          right: 15px;
-          background: white;
+          top: 12px;
+          right: 12px;
+          background: transparent;
           border: none;
           border-radius: 50%;
-          width: 40px;
-          height: 40px;
+          width: 36px;
+          height: 36px;
           display: flex;
           align-items: center;
           justify-content: center;
           cursor: pointer;
           transition: all 0.3s ease;
-          box-shadow: rgba(0, 0, 0, 0.1) 0px 4px 12px,
-                      rgba(0, 0, 0, 0.1) 0px 1px 3px;
           z-index: 2;
-          color: #222;
+          font-size: 1.3rem;
+          color: white;
+          text-shadow: 0 1px 2px rgba(255, 255, 255, 0.4);
         }
 
-        .favorite.active {
-          background: #ff385c;
-          color: white;
+        .favorite-btn.active {
+          color: #ff385c;
           transform: scale(1.1);
         }
 
-        .favorite:hover:not(.processing) {
+        .favorite-btn:hover:not(.processing) {
           transform: scale(1.15);
-          box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        .favorite-btn.active:hover:not(.processing) {
+          color: #e31c5f;
         }
 
         .category-tag {
           position: absolute;
-          bottom: 15px;
-          left: 15px;
-          background: rgba(255, 255, 255, 0.95);
-          padding: 8px 16px;
+          bottom: 12px;
+          left: 12px;
+          background: rgba(255, 255, 255, 0.9);
+          padding: 6px 12px;
           border-radius: 20px;
-          font-size: 0.9rem;
-          color: #484848;
+          font-size: 0.8rem;
+          color: #333;
           display: flex;
           align-items: center;
-          gap: 6px;
-          box-shadow: rgba(0, 0, 0, 0.1) 0px 4px 12px,
-                      rgba(0, 0, 0, 0.1) 0px 1px 3px;
+          gap: 5px;
+          box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
           z-index: 2;
           backdrop-filter: blur(4px);
         }
 
         .listing-info {
-          padding: 20px;
-          background: white;
+          padding: 16px;
+          display: flex;
+          flex-direction: column;
+          flex: 1;
+          gap: 8px;
         }
 
         .listing-header {
           display: flex;
           justify-content: space-between;
           align-items: flex-start;
-          margin-bottom: 8px;
+          gap: 8px;
         }
 
-        .listing-title h3 {
+        .listing-title {
           margin: 0;
-          font-size: 1.3rem;
-          color: #222;
+          font-size: 1.1rem;
           font-weight: 600;
-          line-height: 1.4;
+          color: #333;
+          line-height: 1.3;
           overflow: hidden;
           text-overflow: ellipsis;
           display: -webkit-box;
@@ -408,123 +389,134 @@ const ListingCard = ({ listing, onRemoveFromWishlist, isInWishlist = false }) =>
           -webkit-box-orient: vertical;
         }
 
-        .listing-details {
-          margin: 10px 0;
-          color: #717171;
-          font-size: 1rem;
-        }
-
-        .listing-price {
-          margin: 12px 0;
-          font-size: 1.2rem;
-          display: flex;
-          align-items: baseline;
-          gap: 4px;
-        }
-
-        .listing-price strong {
-          color: #222;
-          font-weight: 600;
-        }
-
-        .per-night {
-          color: #717171;
-          font-size: 1rem;
-        }
-
-        .listing-description {
-          color: #717171;
-          margin: 10px 0 0;
-          font-size: 0.95rem;
-          line-height: 1.5;
-          display: -webkit-box;
-          -webkit-line-clamp: 2;
-          -webkit-box-orient: vertical;
-          overflow: hidden;
-        }
-
-        .rating-container {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          margin: 8px 0;
-          flex-wrap: wrap;
-        }
-
         .rating-display {
           display: flex;
           align-items: center;
           gap: 4px;
-          background: #2c3e50;
+          background: #f8f9fa;
           padding: 4px 8px;
-          border-radius: 6px;
-          color: white;
-        }
-
-        .rating-icon {
-          color: #ffd700;
-          font-size: 1rem;
-        }
-
-        .rating-number {
+          border-radius: 20px;
+          font-size: 0.9rem;
           font-weight: 600;
-          font-size: 1rem;
+          color: #333;
+          white-space: nowrap;
         }
 
-        .stars {
+        .rating-display svg {
+          color: #ffa500;
+          margin-right: 2px;
+        }
+        
+        .total-ratings {
+          font-weight: normal;
+          color: #666;
+          font-size: 0.85rem;
+          margin-left: 2px;
+        }
+
+        .listing-location {
           display: flex;
-          gap: 2px;
+          align-items: center;
+          gap: 6px;
+          color: #555;
+          font-size: 0.95rem;
+          margin-bottom: 4px;
         }
 
-        .star {
-          color: #ddd;
-          font-size: 1rem;
-          transition: color 0.2s ease;
+        .location-icon {
+          color: #ff385c;
+          font-size: 0.85rem;
         }
 
-        .star.filled {
-          color: #ffd700;
+        .listing-price {
+          margin-top: auto;
+          font-size: 1.1rem;
+          display: flex;
+          align-items: center;
+          gap: 4px;
         }
 
-        .star.half-filled {
-          position: relative;
-          color: #ffd700;
-          opacity: 0.5;
+        .listing-price strong {
+          color: #333;
+          font-weight: 600;
         }
 
-        .rating-text {
+        .listing-price span {
           color: #666;
           font-size: 0.9rem;
         }
 
-        .rating-count {
-          color: #666;
+        .star {
+          color: #ddd;
+          font-size: 0.9rem;
         }
 
-        .no-ratings {
-          color: #999;
-          font-style: italic;
+        .star.filled {
+          color: #ffa500;
         }
 
-        @media (max-width: 768px) {
-          .listing-card {
-            margin-bottom: 15px;
-          }
+        .star.half-filled {
+          position: relative;
+          color: #ffa500;
+          opacity: 0.5;
+        }
 
+        @media (max-width: 1024px) {
           .listing-image {
             height: 200px;
           }
-
+          
           .listing-info {
-            padding: 15px;
+            padding: 14px;
           }
-
-          .listing-title h3 {
-            font-size: 1.2rem;
+          
+          .listing-title {
+            font-size: 1rem;
           }
-
-          .listing-price {
+          
+          .rating-display {
+            padding: 3px 6px;
+            font-size: 0.85rem;
+          }
+          
+          .total-ratings {
+            font-size: 0.8rem;
+          }
+        }
+        
+        @media (max-width: 768px) {
+          .listing-image {
+            height: 180px;
+          }
+          
+          .listing-info {
+            padding: 12px;
+          }
+          
+          .category-tag {
+            font-size: 0.75rem;
+            padding: 4px 10px;
+          }
+          
+          .favorite-btn {
+            width: 32px;
+            height: 32px;
             font-size: 1.1rem;
+          }
+          
+          .listing-header {
+            flex-direction: column;
+            align-items: flex-start;
+          }
+          
+          .rating-display {
+            margin-top: 4px;
+          }
+        }
+        
+        @media (max-width: 480px) {
+          .listing-image {
+            height: 220px;
           }
         }
       `}</style>
@@ -547,7 +539,8 @@ ListingCard.propTypes = {
     total_ratings: PropTypes.number
   }).isRequired,
   onRemoveFromWishlist: PropTypes.func,
-  isInWishlist: PropTypes.bool
+  isInWishlist: PropTypes.bool,
+  onWishlistUpdate: PropTypes.func
 };
 
 export default ListingCard;

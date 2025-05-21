@@ -27,7 +27,8 @@ const AddListing = () => {
     { value: 'city-apartments', label: 'City Apartments' },
     { value: 'mountain-cabins', label: 'Mountain Cabins' },
     { value: 'luxury-villas', label: 'Luxury Villas' },
-    { value: 'pools', label: 'Pools' }
+    { value: 'pools', label: 'Pools' },
+    { value: "desert", label: "Desert" }
   ];
 
   const handleInputChange = (e) => {

@@ -16,6 +16,7 @@ const Header = ({ onSearch }) => {
   const dropdownRef = useRef(null);
   const role = localStorage.getItem('role') || 'user';
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [showMobileSearch, setShowMobileSearch] = useState(false);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -59,12 +60,17 @@ const Header = ({ onSearch }) => {
 
   const handleSearch = () => {
     onSearch(searchTerm);
+    setShowMobileSearch(false);
   };
 
   const handleCountrySelect = (country) => {
     setSelectedCountry(country);
     setShowCountryDropdown(false);
     // You can add your filtering logic here
+  };
+
+  const toggleMobileSearch = () => {
+    setShowMobileSearch(!showMobileSearch);
   };
 
   const renderAdminLinks = () => {
@@ -90,9 +96,13 @@ const Header = ({ onSearch }) => {
   return (
     <header>
       <nav>
-        <div className="logo" onClick={() => navigate("/")}>
-            <img src={s} alt="" className="lg"  width={40}/><strong className="esy">EasyTrip</strong>
+        <div className="logo-container">
+          <div className="logo" onClick={() => navigate("/")}>
+              <img src={s} alt="EasyTrip" className="lg" width={40}/>
+              <strong className="esy">EasyTrip</strong>
+          </div>
         </div>
+        
         <div style={{width: '60%',height: '40px'}} className="search-bar">
           <input style={{borderRadius: '10px',padding: '10px',width: '100%',border: 'none',outline: 'none'}}
             type="text"
@@ -104,8 +114,16 @@ const Header = ({ onSearch }) => {
             <FontAwesomeIcon icon={faSearch} />
           </button>
         </div>
+        
+        {/* Mobile search button */}
+        <div className="mobile-search-btn">
+          <button onClick={toggleMobileSearch}>
+            <FontAwesomeIcon icon={faSearch} />
+          </button>
+        </div>
+        
         <div className="nav-right">
-          <button  className="become-host-button" onClick={handleBecomeHostClick}>
+          <button className="become-host-button" onClick={handleBecomeHostClick}>
             {location.pathname === "/become-host" ? "Switch to traveling" : "Become a host"}
           </button>
           <div className="country-selector">
@@ -186,7 +204,39 @@ const Header = ({ onSearch }) => {
         </div>
       </nav>
 
-      <style jsx>{`
+      {/* Mobile search overlay */}
+      {showMobileSearch && (
+        <div className="mobile-search-overlay">
+          <div className="mobile-search-container">
+            <input
+              type="text"
+              placeholder="Search by location"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              autoFocus
+            />
+            <div className="mobile-search-buttons">
+              <button className="cancel-btn" onClick={toggleMobileSearch}>Cancel</button>
+              <button className="search-btn" onClick={handleSearch}>Search</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <style>{`
+        .mobile-search-btn {
+          display: none;
+        }
+        
+        .mobile-search-overlay {
+          display: none;
+        }
+        
+        .logo-container {
+          display: flex;
+          align-items: center;
+        }
+        
         .country-selector {
           position: relative;
         }
@@ -292,6 +342,139 @@ const Header = ({ onSearch }) => {
         .profile-menu {
           display: flex;
           align-items: center;
+        }
+        
+        /* Tablet Styles */
+        @media screen and (max-width: 991px) {
+          nav {
+            padding: 1rem 2rem;
+          }
+          
+          .logo {
+            right: 0;
+            position: relative;
+          }
+        }
+        
+        /* Mobile Styles */
+        @media screen and (max-width: 768px) {
+          nav {
+            grid-template-columns: 1fr auto auto;
+            display: grid;
+            align-items: center;
+            padding: 1rem;
+          }
+          
+          .logo-container {
+            grid-column: 1;
+          }
+          
+          .mobile-search-btn {
+            display: block;
+            grid-column: 2;
+            margin-right: 15px;
+          }
+          
+          .mobile-search-btn button {
+            background: none;
+            border: none;
+            font-size: 1.2rem;
+            color: #333;
+            cursor: pointer;
+          }
+          
+          .nav-right {
+            grid-column: 3;
+            justify-self: end;
+          }
+          
+          .search-bar {
+            display: none !important;
+          }
+          
+          .become-host-button {
+            display: none;
+          }
+          
+          .country-selector {
+            display: none;
+          }
+          
+          .mobile-search-overlay {
+            display: flex;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.95);
+            z-index: 1000;
+            justify-content: center;
+            padding-top: 80px;
+          }
+          
+          .mobile-search-container {
+            width: 90%;
+            max-width: 500px;
+          }
+          
+          .mobile-search-container input {
+            width: 100%;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            font-size: 16px;
+            margin-bottom: 15px;
+            outline: none;
+          }
+          
+          .mobile-search-buttons {
+            display: flex;
+            justify-content: space-between;
+          }
+          
+          .mobile-search-buttons button {
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: none;
+            font-weight: 500;
+            cursor: pointer;
+          }
+          
+          .cancel-btn {
+            background-color: #f5f5f5;
+            color: #333;
+          }
+          
+          .search-btn {
+            background-color: var(--primary-color);
+            color: white;
+          }
+          
+          .logo .lg {
+            width: 35px;
+            height: 35px;
+          }
+          
+          .esy {
+            font-size: 1.2rem;
+            padding: 0.5rem;
+            right: 5px;
+          }
+        }
+        
+        /* Small mobile */
+        @media screen and (max-width: 480px) {
+          .logo .lg {
+            width: 30px;
+            height: 30px;
+          }
+          
+          .esy {
+            font-size: 1.1rem;
+            padding: 0.3rem;
+            right: 0;
+          }
         }
       `}</style>
     </header>

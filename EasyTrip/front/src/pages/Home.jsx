@@ -35,7 +35,7 @@ const categories = [
   { id: "city-apartments", name: "City Apartments", icon: faCity },
   { id: "mountain-cabins", name: "Mountain Cabins", icon: faMountain },
   { id: "forest-lodges", name: "Forest Lodges", icon: faTree },
-  { id: "Pools", name: "Pools", icon: faWater },
+  { id: "pools", name: "Pools", icon: faWater },
   { id: "luxury-villas", name: "Luxury Villas", icon: faHouseChimney },
   { id: "trending", name: "Trending", icon: faFire },
   { id: "camping", name: "Camping", icon: faCampground },
@@ -61,6 +61,7 @@ const Home = ({ searchTerm }) => {
   const [clickedListingId, setClickedListingId] = useState(null);
   const [loadingIcons] = useState([faHotel, faPlane, faMapMarkedAlt, faCompass, faGlobe, faUmbrellaBeach]);
   const [currentIconIndex, setCurrentIconIndex] = useState(0);
+  const [wishlistNotification, setWishlistNotification] = useState(null);
 
   // Animation for loading icons
   useEffect(() => {
@@ -116,7 +117,7 @@ const Home = ({ searchTerm }) => {
               status: listing.status,
               wishlist_id: listing.wishlist_id,
               host: listing.host,
-              rating: rating > 0 ? rating.toFixed(1) : 0,
+              rating: rating,
               total_ratings: totalRatings
             };
           });
@@ -157,7 +158,7 @@ const Home = ({ searchTerm }) => {
             const newRating = parseFloat(averageRating);
             return { 
               ...listing, 
-              rating: newRating > 0 ? newRating.toFixed(1) : 0,
+              rating: newRating,
               total_ratings: parseInt(totalReviews)
             };
           }
@@ -271,6 +272,15 @@ const Home = ({ searchTerm }) => {
     setDeleteConfirmation(null);
   };
 
+  // Add a handler for wishlist notifications
+  const handleWishlistNotification = (message, type) => {
+    setWishlistNotification({ message, type });
+    // Auto-close after 3 seconds
+    setTimeout(() => {
+      setWishlistNotification(null);
+    }, 3000);
+  };
+
   return (
     <div className="page-wrapper">
       <div className="home-container">
@@ -284,8 +294,15 @@ const Home = ({ searchTerm }) => {
           <div className={`notification ${notification.type}`}>
             {notification.message}
             <button className="close-btn" onClick={() => setNotification(null)}>×</button>
-            </div>
-          )}
+          </div>
+        )}
+
+        {wishlistNotification && (
+          <div className={`notification ${wishlistNotification.type}`}>
+            {wishlistNotification.message}
+            <button className="close-btn" onClick={() => setWishlistNotification(null)}>×</button>
+          </div>
+        )}
 
         <div className="filters-container">
           <div className="filters" data-aos="fade-down">
@@ -345,12 +362,14 @@ const Home = ({ searchTerm }) => {
                   <p>No listings found for this category.</p>
               </div>
             ) : (
-                <div className="listings">
+                <div className="listings-grid">
                   {filteredListings.map((listing, index) => (
                 <div 
                   key={listing.id} 
                   data-aos="fade-up"
-                  data-aos-delay={index * 100}
+                  data-aos-once="true"
+                  data-aos-delay={index * 50}
+                  data-aos-duration="800"
                   className={`listing-wrapper ${clickedListingId === listing.id ? 'loading' : ''}`}
                       onClick={() => {
                         setClickedListingId(listing.id);
@@ -359,7 +378,10 @@ const Home = ({ searchTerm }) => {
                         }, 500);
                       }}
                 >
-                  <ListingCard listing={listing} />
+                  <ListingCard 
+                    listing={listing} 
+                    onWishlistUpdate={(message, type) => handleWishlistNotification(message, type)}
+                  />
                   {isLoggedIn && role === 'admin' && (
                     <button 
                           className="delete-button"
@@ -671,32 +693,34 @@ const Home = ({ searchTerm }) => {
         .listings-container {
           position: relative;
           min-height: 200px;
-         
         }
 
-        .listings {
+        .listings-grid {
           display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+          grid-template-columns: repeat(4, 1fr);
           gap: 24px;
           padding: 0;
           animation: fadeIn 0.5s ease;
-           
+          margin: 0 auto;
         }
 
         .listing-wrapper {
           position: relative;
           transition: all 0.3s ease;
-          border-radius: 12px;
+          border-radius: 16px;
           overflow: hidden;
           cursor: pointer;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+          background: white;
+          height: 100%;
+          display: flex;
+          flex-direction: column;
+          transform: translateY(0);
         }
 
-        .listing-wrapper img {
-          transition: transform 0.3s ease;
-        }
-
-        .listing-wrapper:hover img {
-          transform: scale(1.05);
+        .listing-wrapper:hover {
+          transform: translateY(-5px);
+          box-shadow: 0 12px 24px rgba(0,0,0,0.12);
         }
 
         .listing-wrapper.loading {
@@ -733,7 +757,7 @@ const Home = ({ searchTerm }) => {
           cursor: pointer;
           transition: all 0.3s ease;
           font-size: 0.9rem;
-          z-index: 2;
+          z-index: 5;
           opacity: 0;
           transform: translateY(10px);
           display: flex;
@@ -786,13 +810,15 @@ const Home = ({ searchTerm }) => {
           }
         }
 
-        @media (max-width: 1024px) {
+        @media (max-width: 1280px) {
           .home-container {
             padding: 20px;
           }
+        }
 
-          .listings {
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        @media (max-width: 1024px) {
+          .listings-grid {
+            grid-template-columns: repeat(3, 1fr);
             gap: 20px;
           }
         }
@@ -812,8 +838,8 @@ const Home = ({ searchTerm }) => {
             font-size: 0.9rem;
           }
 
-          .listings {
-            grid-template-columns: 1fr;
+          .listings-grid {
+            grid-template-columns: repeat(2, 1fr);
             gap: 15px;
           }
 
@@ -828,6 +854,13 @@ const Home = ({ searchTerm }) => {
 
           .delete-confirmation-modal {
             padding: 20px;
+          }
+        }
+
+        @media (max-width: 480px) {
+          .listings-grid {
+            grid-template-columns: 1fr;
+            gap: 20px;
           }
         }
 

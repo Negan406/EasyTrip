@@ -15,9 +15,17 @@
   width: 50px;
   height: 50px;
   border: 5px solid #f3f3f3;
-  border-top: 5px solid var(--primary-color);
+  border-top: 5px solid var(--primary-color, #ff385c);
   border-radius: 50%;
   animation: spin 1s linear infinite;
+}
+
+.inline-spinner {
+  position: relative;
+  height: auto;
+  min-height: 200px;
+  width: auto;
+  background-color: transparent;
 }
 
 @keyframes spin {
